@@ -1,0 +1,45 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Connect to delve debugger",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "remotePath": "",
+            "port": 38697,
+            "host": "localhost",
+            "showLog": true
+        },
+        {
+            "name": "Debug",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${fileDirname}",
+            "env": {},
+            "args": [],
+            "showLog": true
+        },
+        {
+            "name": "Debug Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "env": {},
+            "args": [],
+            "showLog": true
+        },
+        {
+            "name": "Debug with Args",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "env": {},
+            "args": ["--help"],
+            "showLog": true
+        }
+    ]
+}
