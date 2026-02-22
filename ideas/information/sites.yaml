@@ -1,0 +1,5 @@
+sites:
+  - https://ai-search.io/
+
+repos:
+  - https://github.com/agent0ai/agent-zero.git
