@@ -1,90 +1,103 @@
 # Innate
 
-> Your True Self Through Creations/作品即真我
+> What you made is what made you. / 你创造了什么，什么就塑造了你
 
 Choose a README:
 - English: [README.en.md](./README.en.md)
 - 中文: [README.zh-CN.md](./README.zh-CN.md)
 
+---
 
-## 关于
+## 缘起
 
-这是一个用来真诚实践、轻轻反思的小空间。
+"Innate" 这个名字，是一个温柔的提醒：回到内在，然后让内在通过双手自然流露出来。
 
-简历当然有用，但它也是对一个“活着的人”的必要压缩。对我来说，更接近真实的，是那些带着呼吸感的证据：我做了什么、试了什么、觉察到什么，以及一路学到什么。
+我常常觉得，那些真正重要的东西，往往不是写在简历上的头衔，而是深夜敲下的代码、反复打磨的想法、失败后重新开始的勇气。它们带着我的呼吸和温度，是我活着的证明。
 
-“Innate” 提醒我回到内在，然后让内在通过创作自然显现。
+## 从抽象到真实
 
-## 核心理念
+我有一个朴素的愿望：把脑子里那些抽象的念头，变成看得见、摸得着的东西。不是为了取悦谁，而是因为它们本就是我的一部分。
 
-### 从抽象到真实
+> 你创造了什么，什么就塑造了你。
 
-- 简历不是虚假，它是一种必要的压缩：像地图，而不是疆域本身。
-- 作品与鲜活的思考更接近“疆域”。它们带着纹理、时间、失误与成长，是一个人的呼吸证明。
+这句话我深信不疑。每一个作品，都是一面镜子，映照出那一刻的我。
 
-### 知行合一
+## 与 AI 同行
 
-对我来说，“知行合一”不是口号，而是一种实践层面的具身：让理解落在行为上，哪怕很小、也不完美。
+这个项目里的很多东西，都是我和 AI 一起完成的。
 
-我常用的一个练习框架是：
+AI 像是一个不知疲倦的伙伴，帮我那些模糊的想法变得清晰。有时候我会惊叹于它的能力，有时候也会因为它的局限而无奈。但这就是合作的样子吧——不完美，但真实。
 
-- 觉察私欲：看见自己的虚荣、恐惧、控制欲、急躁。
-- 易位处之：换位、换视角、换时间尺度去看同一件事。
-- 此心不动，随机而应：心不被拉着走，但也不僵硬；如实应对当下。
+## 方向很多，初心不变
 
-一句提醒自己时常会用到的话：
+这个项目会走向很多不同的方向，可能今天是工具，明天是笔记，后天又是什么完全不同的东西。
 
-> 知行合一觉察私欲,易位处之,此心不动，随机而应
+但无论走到哪里，我都不会忘记：用完成的作品来展示真实的自己。这不是一种表演，而是一种存在的方式。
 
-## 内容
+## 我的循环
 
-- 鲜活的想法：原始的思考、演进的概念，以及未来项目的种子。
-- 真实的实践：源于真实好奇心而非外部期待的项目与实验。
-- 反思与沉淀：记录有哪些改变、哪些未变，以及接下来想尝试什么。
+我不去预测未来会怎样，不给事情贴标签，也不抱着太高的期望。
 
-## 初心
+我只是简单地做这一件事：**记录，实践，反思，打磨，然后再行动**。
 
-耕耘一个植根于本质而非形式的数字身份。让作品发声，让自我在创造中生长。
+一遍又一遍，像潮水一样，不急不躁。
 
+## 关于评价
 
-# Innate
+我慢慢明白，一切事物都是完整的——有阳光的地方就有阴影，有好的就可能有坏的。
 
-> Your True Self Through Creations
+所以，任何评价我都愿意听。赞扬也好，批评也罢，都是这个世界给我的回响。
 
-## About
+但怎么看待这些评价，那是我的事，与任何人无关。我选择用自己的方式，和它们相处。
 
-This repository is a small place for honest practice and gentle reflection.
+---
 
-A resume can be useful, but it is also a necessary compression of a living person. What feels more true, to me, is the breathing evidence: what I build, what I try, what I notice, and what I learn along the way.
+感谢你来到这里。如果你在这些文字或作品里，找到了一点点共鸣，那就是我最大的欣喜。
 
-“Innate” is a reminder to return to the inside, then let the inside show up through creation.
+---
 
-## Philosophy
+## Origins
 
-### From Abstraction to Reality
+The name "Innate" is a gentle reminder: return to what's inside, then let it flow naturally through your hands.
 
-- A resume is not a lie. It is a necessary compression: a map, not the territory.
-- Creations and living thoughts are closer to the territory. They carry texture, time, mistakes, and growth: the breathing evidence of a person.
+I've often felt that the things that truly matter aren't the titles on a resume, but the code written late at night, the ideas polished again and again, the courage to start over after failure. They carry my breath and warmth—they are proof that I am alive.
 
-### Unity of Knowledge and Action
+## From Abstraction to Reality
 
-To me, unity is not a slogan. It is a daily practice of embodiment: let what I understand show up in what I do, even in small, imperfect steps.
+I have a simple wish: to turn those abstract thoughts in my mind into something visible, something tangible. Not to please anyone, but because they are part of who I am.
 
-A simple loop that helps:
+> What you made is what made you.
 
-- Notice desire: vanity, fear, control, rushing.
-- Shift position: try another angle, another person, another time.
-- Keep the heart steady, then respond to what is actually happening.
-- Do one small action, then reflect and adjust.
+I believe this deeply. Every creation is a mirror, reflecting the me of that moment.
 
-## Content
+## Walking with AI
 
-- Living ideas: raw thoughts, evolving concepts, seeds of future projects.
-- Authentic practice: projects driven by curiosity rather than external expectations.
-- Reflections: what changed, what stayed, what I want to try next.
+Many things in this project are completed together with AI.
 
-## Intent
+AI is like a tireless companion, helping me clarify those fuzzy ideas. Sometimes I marvel at its capabilities; sometimes I feel helpless about its limitations. But this is what collaboration looks like—imperfect, but real.
 
-To cultivate a digital identity rooted in substance rather than form. To let the work speak, and let the self grow through the act of creation.
+## Many Directions, One Heart
 
+This project will head in many different directions. Today it might be a tool, tomorrow a note, the day after something completely different.
 
+But no matter where I go, I won't forget: use completed works to show my true self. This isn't a performance—it's a way of being.
+
+## My Loop
+
+I don't try to predict the future, I don't label things, and I don't hold on to high expectations.
+
+I simply do this one thing: **Record, Practice, Reflect, Refine, Then Act Again**.
+
+Over and over, like the tides, neither rushed nor restless.
+
+## On Evaluations
+
+I've slowly come to understand that everything is complete—where there's sunlight, there's shadow; where there's good, there may be bad.
+
+So I'm willing to listen to any evaluation. Praise or criticism, they are all echoes the world gives back to me.
+
+But how I view these evaluations is my business, and mine alone. I choose to make peace with them in my own way.
+
+---
+
+Thank you for being here. If you found even a tiny bit of resonance in these words or works, that is my greatest joy.
