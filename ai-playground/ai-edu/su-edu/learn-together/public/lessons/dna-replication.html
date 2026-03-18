@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA复制 - DNA Replication</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #14B8A6 0%, #06B6D4 50%, #22D3EE 100%);
+            --bg-gradient: linear-gradient(180deg, #0F172A 0%, #164E63 50%, #155E75 100%);
+            --theme-biology: linear-gradient(135deg, #10B981 0%, #22D3EE 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --accent-cyan: #22D3EE;
+            --accent-emerald: #34D399;
+            --accent-rose: #FB7185;
+            --accent-amber: #FBBF24;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .nav-bar {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--theme-biology);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .nav-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(16, 185, 129, 0.3);
+            border-color: var(--accent-emerald);
+        }
+        
+        .main-container {
+            display: flex;
+            height: 100vh;
+            padding-top: 60px;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-320px);
+        }
+        
+        .sidebar-toggle {
+            position: fixed;
+            left: 320px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            width: 24px;
+            height: 48px;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            z-index: 101;
+            transition: left 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sidebar-toggle.collapsed {
+            left: 0;
+        }
+        
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent-emerald);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--theme-biology);
+            border-radius: 2px;
+        }
+        
+        .objective-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: var(--glass-bg);
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .objective-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent-emerald);
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .objective-checkbox.checked {
+            background: var(--accent-emerald);
+        }
+        
+        .objective-checkbox.checked::after {
+            content: '✓';
+            color: #0F172A;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .objective-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .formula-box {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(34, 211, 238, 0.1) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .base-pair {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 0.75rem;
+        }
+        
+        .base {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .base-A { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
+        .base-T { background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); }
+        .base-G { background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%); }
+        .base-C { background: linear-gradient(135deg, #EF4444 0%, #F87171 100%); }
+        
+        .base-bond {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+        
+        .principle-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 1.5rem;
+        }
+        
+        .step-indicator {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        
+        .step-dot.active {
+            background: var(--accent-emerald);
+            border-color: var(--accent-emerald);
+            box-shadow: 0 0 12px rgba(52, 211, 153, 0.5);
+        }
+        
+        .step-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        .app-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--glass-bg);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .app-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--theme-biology);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        .app-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .control-panel {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem 2rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            box-shadow: var(--glass-shadow);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .control-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .phase-display {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(34, 211, 238, 0.1) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            min-width: 180px;
+        }
+        
+        .phase-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.25rem;
+        }
+        
+        .phase-value {
+            font-size: 1rem;
+            color: var(--accent-emerald);
+            font-weight: 600;
+        }
+        
+        .play-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--theme-biology);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .speed-slider {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--theme-biology);
+            cursor: pointer;
+        }
+        
+        .info-overlay {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            max-width: 200px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-value {
+            color: var(--accent-emerald);
+            font-weight: 600;
+        }
+        
+        .legend {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+        }
+        
+        .legend-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--theme-biology);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-text {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-close {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                z-index: 99;
+                height: calc(100vh - 60px);
+            }
+            
+            .control-panel {
+                flex-wrap: wrap;
+                width: 95%;
+                padding: 1rem;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <div style="display: flex; align-items: baseline;">
+            <span class="nav-title">DNA复制</span>
+            <span class="nav-subtitle">DNA Replication</span>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="resetSimulation()">重置</button>
+            <button class="nav-btn" onclick="nextPhase()">下一阶段</button>
+            <button class="nav-btn" onclick="toggleFullscreen()">全屏</button>
+            <button class="nav-btn" onclick="showAbout()">关于</button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <aside class="sidebar" id="sidebar">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 class="section-title">学习目标</h3>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">理解DNA双螺旋结构</span>
+                </div>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">掌握碱基配对原则 (A-T, G-C)</span>
+                </div>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">了解半保留复制机制</span>
+                </div>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">认识复制过程中的关键酶</span>
+                </div>
+            </div>
+
+            <div class="formula-box">
+                <h3 class="section-title">碱基配对原则</h3>
+                <div class="base-pair">
+                    <div class="base base-A">A</div>
+                    <div class="base-bond">═══</div>
+                    <div class="base base-T">T</div>
+                </div>
+                <div class="base-pair">
+                    <div class="base base-G">G</div>
+                    <div class="base-bond">═ ═</div>
+                    <div class="base base-C">C</div>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;">
+                    腺嘌呤(A)↔胸腺嘧啶(T) | 鸟嘌呤(G)↔胞嘧啶(C)
+                </p>
+            </div>
+
+            <div class="step-indicator">
+                <div class="step-dot active" id="step1"></div>
+                <div class="step-dot" id="step2"></div>
+                <div class="step-dot" id="step3"></div>
+                <div class="step-dot" id="step4"></div>
+            </div>
+            
+            <div class="step-label" id="stepLabel">阶段1: 解旋 - DNA解旋酶打开双螺旋</div>
+
+            <div class="principle-text">
+                <p style="margin-bottom: 0.75rem;"><strong>🧬 DNA复制是什么？</strong></p>
+                <p style="margin-bottom: 0.75rem;">想象DNA像一条拉链，复制就是把拉链拉开，然后用每一边作为模板，配上新的"齿"，最终形成两条完整的拉链。</p>
+                <p style="margin-bottom: 0.75rem;"><strong>📍 三个阶段：</strong></p>
+                <p style="margin-bottom: 0.5rem;">1️⃣ <strong>解旋</strong>：解旋酶像拉链头一样打开双链</p>
+                <p style="margin-bottom: 0.5rem;">2️⃣ <strong>合成</strong>：DNA聚合酶沿模板链添加新碱基</p>
+                <p>3️⃣ <strong>终止</strong>：两条新DNA分子形成完毕</p>
+            </div>
+
+            <div>
+                <h3 class="section-title">为什么重要</h3>
+                <div class="app-item">
+                    <div class="app-icon">🔬</div>
+                    <span class="app-text">细胞分裂前必须复制DNA</span>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon">🧬</div>
+                    <span class="app-text">遗传信息传递给下一代</span>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon">💊</div>
+                    <span class="app-text">PCR技术的基础（新冠检测）</span>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon">🚨</div>
+                    <span class="app-text">复制错误可能导致突变/癌症</span>
+                </div>
+            </div>
+        </aside>
+
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">◀</button>
+
+        <main class="canvas-container">
+            <canvas id="canvas3d"></canvas>
+            
+            <div class="legend">
+                <div class="legend-title">碱基图例</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #10B981;"></div>
+                    <span>A (腺嘌呤)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #F59E0B;"></div>
+                    <span>T (胸腺嘧啶)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3B82F6;"></div>
+                    <span>G (鸟嘌呤)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #EF4444;"></div>
+                    <span>C (胞嘧啶)</span>
+                </div>
+            </div>
+
+            <div class="info-overlay">
+                <div class="info-item">
+                    <span>当前阶段</span>
+                    <span class="info-value" id="phaseNum">1/4</span>
+                </div>
+                <div class="info-item">
+                    <span>解旋进度</span>
+                    <span class="info-value" id="unwindProgress">0%</span>
+                </div>
+                <div class="info-item">
+                    <span>新链合成</span>
+                    <span class="info-value" id="synthProgress">0%</span>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="phase-display">
+                    <div class="phase-label">当前阶段</div>
+                    <div class="phase-value" id="currentPhase">解旋</div>
+                </div>
+
+                <div class="control-group">
+                    <span class="control-label">旋转速度</span>
+                    <div class="speed-control">
+                        <input type="range" class="speed-slider" id="rotateSpeed" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="play-controls">
+                    <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                    <button class="play-btn" onclick="nextPhase()" style="background: var(--glass-bg); border: 1px solid var(--glass-border);">⏭</button>
+                </div>
+
+                <button class="play-btn" onclick="resetSimulation()" style="background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);">↺</button>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="aboutModal">
+        <div class="modal-content">
+            <h2 class="modal-title">关于DNA复制</h2>
+            <p class="modal-text">
+                DNA复制是生物遗传的基础。1953年，Watson和Crick发现DNA双螺旋结构后，提出了半保留复制假说。
+                <br><br>
+                1958年，Meselson和Stahl通过实验证实了这一假说：每个新DNA分子都包含一条旧链和一条新链。
+                <br><br>
+                复制过程极其精确，错误率仅约$10^{-9}$，这得益于DNA聚合酶的校对功能。
+            </p>
+            <button class="modal-close" onclick="hideAbout()">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer;
+        let dnaGroup, strand1Group, strand2Group, newStrand1Group, newStrand2Group;
+        let isPlaying = false;
+        let currentPhase = 1;
+        let rotationSpeed = 0.005;
+        let unwindProgress = 0;
+        let synthProgress = 0;
+        
+        const baseColors = {
+            'A': 0x10B981,
+            'T': 0xF59E0B,
+            'G': 0x3B82F6,
+            'C': 0xEF4444
+        };
+        
+        const sequence1 = ['A', 'T', 'G', 'C', 'A', 'G', 'T', 'C', 'G', 'A', 'T', 'C'];
+        const complement = { 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G' };
+
+        function init() {
+            const canvas = document.getElementById('canvas3d');
+            const container = canvas.parentElement;
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0F172A);
+            scene.fog = new THREE.Fog(0x0F172A, 15, 40);
+
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 15);
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 5);
+            scene.add(directionalLight);
+
+            const pointLight1 = new THREE.PointLight(0x10B981, 0.5, 20);
+            pointLight1.position.set(-5, 5, 5);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0x22D3EE, 0.5, 20);
+            pointLight2.position.set(5, -5, 5);
+            scene.add(pointLight2);
+
+            createDNA();
+            createParticles();
+            
+            window.addEventListener('resize', onWindowResize);
+            
+            document.getElementById('rotateSpeed').addEventListener('input', (e) => {
+                rotationSpeed = e.target.value / 10000;
+            });
+            
+            animate();
+        }
+
+        function createDNA() {
+            dnaGroup = new THREE.Group();
+            strand1Group = new THREE.Group();
+            strand2Group = new THREE.Group();
+            newStrand1Group = new THREE.Group();
+            newStrand2Group = new THREE.Group();
+            
+            const helixRadius = 2;
+            const verticalSpacing = 0.8;
+            const turns = sequence1.length;
+            
+            for (let i = 0; i < turns; i++) {
+                const angle1 = (i / turns) * Math.PI * 4;
+                const angle2 = angle1 + Math.PI;
+                const y = (i - turns / 2) * verticalSpacing;
+                
+                const x1 = Math.cos(angle1) * helixRadius;
+                const z1 = Math.sin(angle1) * helixRadius;
+                const x2 = Math.cos(angle2) * helixRadius;
+                const z2 = Math.sin(angle2) * helixRadius;
+                
+                const backboneMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x64748B,
+                    roughness: 0.3,
+                    metalness: 0.5
+                });
+                
+                const sphereGeo = new THREE.SphereGeometry(0.25, 16, 16);
+                
+                const node1 = new THREE.Mesh(sphereGeo, backboneMaterial);
+                node1.position.set(x1, y, z1);
+                strand1Group.add(node1);
+                
+                const node2 = new THREE.Mesh(sphereGeo, backboneMaterial);
+                node2.position.set(x2, y, z2);
+                strand2Group.add(node2);
+                
+                if (i > 0) {
+                    const prevAngle1 = ((i - 1) / turns) * Math.PI * 4;
+                    const prevY = ((i - 1) - turns / 2) * verticalSpacing;
+                    const prevX1 = Math.cos(prevAngle1) * helixRadius;
+                    const prevZ1 = Math.sin(prevAngle1) * helixRadius;
+                    const prevX2 = Math.cos(prevAngle1 + Math.PI) * helixRadius;
+                    const prevZ2 = Math.sin(prevAngle1 + Math.PI) * helixRadius;
+                    
+                    createTube(prevX1, prevY, prevZ1, x1, y, z1, strand1Group, 0x94A3B8);
+                    createTube(prevX2, prevY, prevZ2, x2, y, z2, strand2Group, 0x94A3B8);
+                }
+                
+                const base1 = sequence1[i];
+                const base2 = complement[base1];
+                
+                const baseMaterial1 = new THREE.MeshStandardMaterial({
+                    color: baseColors[base1],
+                    roughness: 0.3,
+                    metalness: 0.6,
+                    emissive: baseColors[base1],
+                    emissiveIntensity: 0.2
+                });
+                
+                const baseMaterial2 = new THREE.MeshStandardMaterial({
+                    color: baseColors[base2],
+                    roughness: 0.3,
+                    metalness: 0.6,
+                    emissive: baseColors[base2],
+                    emissiveIntensity: 0.2
+                });
+                
+                const baseGeo = new THREE.CylinderGeometry(0.15, 0.15, 1.5, 8);
+                
+                const base1Mesh = new THREE.Mesh(baseGeo, baseMaterial1);
+                base1Mesh.position.set(x1 * 0.6, y, z1 * 0.6);
+                base1Mesh.rotation.z = Math.PI / 2;
+                base1Mesh.rotation.y = angle1;
+                base1Mesh.userData = { baseType: base1, index: i, isBase: true };
+                strand1Group.add(base1Mesh);
+                
+                const base2Mesh = new THREE.Mesh(baseGeo, baseMaterial2);
+                base2Mesh.position.set(x2 * 0.6, y, z2 * 0.6);
+                base2Mesh.rotation.z = Math.PI / 2;
+                base2Mesh.rotation.y = angle2;
+                base2Mesh.userData = { baseType: base2, index: i, isBase: true };
+                strand2Group.add(base2Mesh);
+                
+                createBond(x1 * 0.3, y, z1 * 0.3, x2 * 0.3, y, z2 * 0.3, strand1Group);
+            }
+            
+            dnaGroup.add(strand1Group);
+            dnaGroup.add(strand2Group);
+            dnaGroup.add(newStrand1Group);
+            dnaGroup.add(newStrand2Group);
+            scene.add(dnaGroup);
+        }
+
+        function createTube(x1, y1, z1, x2, y2, z2, group, color) {
+            const start = new THREE.Vector3(x1, y1, z1);
+            const end = new THREE.Vector3(x2, y2, z2);
+            const direction = new THREE.Vector3().subVectors(end, start);
+            const length = direction.length();
+            
+            const geometry = new THREE.CylinderGeometry(0.08, 0.08, length, 8);
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.4,
+                metalness: 0.3
+            });
+            
+            const tube = new THREE.Mesh(geometry, material);
+            tube.position.copy(start.clone().add(end).multiplyScalar(0.5));
+            tube.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                direction.clone().normalize()
+            );
+            
+            group.add(tube);
+        }
+
+        function createBond(x1, y1, z1, x2, y2, z2, group) {
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x475569,
+                roughness: 0.5,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            const start = new THREE.Vector3(x1, y1, z1);
+            const end = new THREE.Vector3(x2, y2, z2);
+            const direction = new THREE.Vector3().subVectors(end, start);
+            const length = direction.length();
+            
+            const geometry = new THREE.CylinderGeometry(0.03, 0.03, length * 0.4, 6);
+            
+            const bond = new THREE.Mesh(geometry, material);
+            bond.position.copy(start.clone().add(direction.clone().multiplyScalar(0.3)));
+            bond.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                direction.clone().normalize()
+            );
+            group.add(bond);
+        }
+
+        function createParticles() {
+            const particleCount = 200;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 30;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0x22D3EE,
+                size: 0.1,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('playBtn').innerHTML = isPlaying ? '⏸' : '▶';
+        }
+
+        function nextPhase() {
+            if (currentPhase < 4) {
+                currentPhase++;
+                updatePhaseUI();
+            }
+        }
+
+        function updatePhaseUI() {
+            const phases = ['解旋', '解旋', '合成', '完成'];
+            const labels = [
+                '阶段1: 解旋 - DNA解旋酶打开双螺旋',
+                '阶段2: 解旋继续 - 形成复制叉',
+                '阶段3: 合成 - DNA聚合酶添加新碱基',
+                '阶段4: 完成 - 两个新DNA分子形成'
+            ];
+            
+            document.getElementById('currentPhase').textContent = phases[currentPhase - 1];
+            document.getElementById('phaseNum').textContent = currentPhase + '/4';
+            document.getElementById('stepLabel').textContent = labels[currentPhase - 1];
+            
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById('step' + i);
+                if (i <= currentPhase) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            }
+        }
+
+        function resetSimulation() {
+            currentPhase = 1;
+            unwindProgress = 0;
+            synthProgress = 0;
+            isPlaying = false;
+            document.getElementById('playBtn').innerHTML = '▶';
+            updatePhaseUI();
+            
+            strand1Group.position.set(0, 0, 0);
+            strand2Group.position.set(0, 0, 0);
+            newStrand1Group.clear();
+            newStrand2Group.clear();
+            
+            document.getElementById('unwindProgress').textContent = '0%';
+            document.getElementById('synthProgress').textContent = '0%';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            sidebar.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
+            toggle.innerHTML = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function showAbout() {
+            document.getElementById('aboutModal').classList.add('active');
+        }
+
+        function hideAbout() {
+            document.getElementById('aboutModal').classList.remove('active');
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d').parentElement;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (dnaGroup) {
+                dnaGroup.rotation.y += rotationSpeed;
+            }
+            
+            if (isPlaying) {
+                if (currentPhase <= 2) {
+                    unwindProgress = Math.min(unwindProgress + 0.5, 100);
+                    document.getElementById('unwindProgress').textContent = Math.round(unwindProgress) + '%';
+                    
+                    const separation = unwindProgress / 100 * 1.5;
+                    strand1Group.position.x = -separation;
+                    strand2Group.position.x = separation;
+                    
+                    if (unwindProgress >= 100 && currentPhase < 3) {
+                        currentPhase = 3;
+                        updatePhaseUI();
+                    }
+                } else if (currentPhase === 3) {
+                    synthProgress = Math.min(synthProgress + 0.3, 100);
+                    document.getElementById('synthProgress').textContent = Math.round(synthProgress) + '%';
+                    
+                    if (synthProgress >= 100) {
+                        currentPhase = 4;
+                        updatePhaseUI();
+                    }
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ]
+            });
+        });
+
+        document.getElementById('aboutModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) hideAbout();
+        });
+    </script>
+</body>
+</html>

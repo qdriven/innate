@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>氧化还原反应 | Redox Reaction</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+            --bg-gradient: linear-gradient(180deg, #0F172A 0%, #451A03 50%, #7C2D12 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --accent-orange: #FB923C;
+            --accent-red: #F87171;
+            --accent-blue: #60A5FA;
+            --accent-green: #34D399;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .nav {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(251, 146, 60, 0.2);
+            border-color: var(--accent-orange);
+        }
+        
+        .main-container {
+            display: flex;
+            margin-top: 4rem;
+            min-height: calc(100vh - 4rem);
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 4rem);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-orange);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .learning-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .learning-item input[type="checkbox"] {
+            margin-top: 0.25rem;
+            accent-color: var(--accent-orange);
+        }
+        
+        .formula-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .formula-box .katex {
+            font-size: 1.1rem;
+        }
+        
+        .concept-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        
+        .highlight {
+            color: var(--accent-orange);
+            font-weight: 500;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(251, 146, 60, 0.1) 0%, transparent 70%);
+        }
+        
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .control-panel {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            max-width: 90%;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .control-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .control-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-orange);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-orange);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(251, 146, 60, 0.5);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .control-btn:hover {
+            background: rgba(251, 146, 60, 0.2);
+            border-color: var(--accent-orange);
+        }
+        
+        .control-btn.active {
+            background: var(--accent-orange);
+            color: #000;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-width: 200px;
+        }
+        
+        .info-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .info-label {
+            color: var(--text-secondary);
+        }
+        
+        .info-value {
+            font-weight: 600;
+        }
+        
+        .info-value.oxidation {
+            color: var(--accent-red);
+        }
+        
+        .info-value.reduction {
+            color: var(--accent-blue);
+        }
+        
+        .info-value.neutral {
+            color: var(--accent-green);
+        }
+        
+        .phase-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .phase-text {
+            font-size: 0.875rem;
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 8rem;
+            right: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .legend-color.oxidizing {
+            background: var(--accent-red);
+        }
+        
+        .legend-color.reducing {
+            background: var(--accent-blue);
+        }
+        
+        .legend-color.electron {
+            background: var(--accent-orange);
+        }
+        
+        .about-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        .about-modal.show {
+            display: flex;
+        }
+        
+        .about-content {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .about-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .about-content p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+                width: 95%;
+                gap: 1rem;
+            }
+            
+            .info-panel {
+                top: auto;
+                bottom: 12rem;
+                right: 0.5rem;
+                left: 0.5rem;
+                min-width: auto;
+            }
+            
+            .legend {
+                bottom: 18rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-title">⚡ 氧化还原反应 | Redox Reaction</div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="resetSimulation()">重置</button>
+            <button class="nav-btn" onclick="randomExperiment()">随机实验</button>
+            <button class="nav-btn" onclick="toggleFullscreen()">全屏</button>
+            <button class="nav-btn" onclick="showAbout()">关于</button>
+        </div>
+    </nav>
+    
+    <div class="main-container">
+        <aside class="sidebar">
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">🎯 学习目标</h3>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>理解氧化还原反应的本质是电子转移</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>识别氧化剂和还原剂</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>掌握氧化数的变化规律</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>理解氧化与还原的辩证关系</span>
+                </label>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">📐 核心公式</h3>
+                <div class="formula-box" id="formula1"></div>
+                <div class="formula-box" id="formula2"></div>
+                <div class="formula-box" id="formula3"></div>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">💡 核心概念</h3>
+                <p class="concept-text">
+                    <span class="highlight">氧化还原反应</span>是化学反应中电子从一种物质转移到另一种物质的过程。
+                </p>
+                <p class="concept-text">
+                    <span class="highlight">氧化</span>：失去电子，氧化数升高（被氧化）
+                </p>
+                <p class="concept-text">
+                    <span class="highlight">还原</span>：得到电子，氧化数降低（被还原）
+                </p>
+                <p class="concept-text">
+                    记忆口诀：<span class="highlight">"失升氧，得降还"</span>
+                </p>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">🌍 实际应用</h3>
+                <p class="concept-text">
+                    • 电池放电：化学能转化为电能
+                </p>
+                <p class="concept-text">
+                    • 金属冶炼：从矿石中提取金属
+                </p>
+                <p class="concept-text">
+                    • 燃烧反应：燃料与氧气反应放热
+                </p>
+                <p class="concept-text">
+                    • 光合作用：CO₂被还原生成葡萄糖
+                </p>
+            </section>
+        </aside>
+        
+        <div class="canvas-container">
+            <canvas id="canvas3d"></canvas>
+            
+            <div class="phase-indicator">
+                <span class="phase-text" id="phaseText">准备反应</span>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-title">反应状态</div>
+                <div class="info-row">
+                    <span class="info-label">氧化剂:</span>
+                    <span class="info-value oxidation" id="oxidizingAgent">Zn²⁺</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">还原剂:</span>
+                    <span class="info-value reduction" id="reducingAgent">Cu</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">电子转移:</span>
+                    <span class="info-value" id="electronCount">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">反应进度:</span>
+                    <span class="info-value neutral" id="reactionProgress">0%</span>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color oxidizing"></div>
+                    <span>氧化剂 (得电子)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color reducing"></div>
+                    <span>还原剂 (失电子)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color electron"></div>
+                    <span>电子 (e⁻)</span>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <span class="control-label">反应类型</span>
+                    <select class="control-btn" id="reactionType" onchange="changeReactionType()">
+                        <option value="zn-cu">Zn + Cu²⁺</option>
+                        <option value="fe-cu">Fe + Cu²⁺</option>
+                        <option value="mg-acid">Mg + H⁺</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">反应速度</span>
+                    <div class="slider-container">
+                        <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+                        <span class="control-value" id="speedValue">1.0x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">电子数量</span>
+                    <div class="slider-container">
+                        <input type="range" id="electronSlider" min="2" max="8" step="2" value="2">
+                        <span class="control-value" id="electronValue">2</span>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="control-btn" id="playBtn" onclick="togglePlay()">▶ 开始</button>
+                    <button class="control-btn" onclick="stepSimulation()">单步</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="about-modal" id="aboutModal" onclick="hideAbout()">
+        <div class="about-content" onclick="event.stopPropagation()">
+            <h3>⚡ 氧化还原反应</h3>
+            <p>
+                氧化还原反应是化学反应中最重要的一类反应，涉及电子的转移。
+                通过这个3D交互式模拟，你可以直观地观察电子是如何从还原剂转移到氧化剂的。
+            </p>
+            <p>
+                调整参数，观察不同反应类型的电子转移过程，深入理解氧化还原的本质！
+            </p>
+            <button class="control-btn" onclick="hideAbout()">关闭</button>
+        </div>
+    </div>
+    
+    <script>
+        let scene, camera, renderer;
+        let reducingAgent, oxidizingAgent;
+        let electrons = [];
+        let products = [];
+        let isPlaying = false;
+        let reactionPhase = 0;
+        let progress = 0;
+        let animationId;
+        
+        const reactionTypes = {
+            'zn-cu': {
+                reducing: { name: 'Zn', color: 0x60A5FA, oxidationBefore: 0, oxidationAfter: 2 },
+                oxidizing: { name: 'Cu²⁺', color: 0xF87171, oxidationBefore: 2, oxidationAfter: 0 },
+                productReducing: 'Zn²⁺',
+                productOxidizing: 'Cu'
+            },
+            'fe-cu': {
+                reducing: { name: 'Fe', color: 0x94A3B8, oxidationBefore: 0, oxidationAfter: 2 },
+                oxidizing: { name: 'Cu²⁺', color: 0xF87171, oxidationBefore: 2, oxidationAfter: 0 },
+                productReducing: 'Fe²⁺',
+                productOxidizing: 'Cu'
+            },
+            'mg-acid': {
+                reducing: { name: 'Mg', color: 0x34D399, oxidationBefore: 0, oxidationAfter: 2 },
+                oxidizing: { name: 'H⁺', color: 0xFB923C, oxidationBefore: 1, oxidationAfter: 0 },
+                productReducing: 'Mg²⁺',
+                productOxidizing: 'H₂'
+            }
+        };
+        
+        let currentReaction = reactionTypes['zn-cu'];
+        let electronCount = 2;
+        let speedMultiplier = 1;
+        
+        function init() {
+            const canvas = document.getElementById('canvas3d');
+            const container = canvas.parentElement;
+            
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 3, 12);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight1 = new THREE.PointLight(0xFB923C, 1, 50);
+            pointLight1.position.set(5, 5, 5);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x60A5FA, 0.8, 50);
+            pointLight2.position.set(-5, 3, -5);
+            scene.add(pointLight2);
+            
+            createMolecules();
+            initFormulas();
+            
+            window.addEventListener('resize', onWindowResize);
+            canvas.addEventListener('wheel', onMouseWheel);
+            
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                const rotationSpeed = 0.005;
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * rotationSpeed;
+                spherical.phi += deltaY * rotationSpeed;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mouseup', () => isDragging = false);
+            canvas.addEventListener('mouseleave', () => isDragging = false);
+            
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+                
+                const rotationSpeed = 0.005;
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * rotationSpeed;
+                spherical.phi += deltaY * rotationSpeed;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+            
+            canvas.addEventListener('touchend', () => isDragging = false);
+            
+            animate();
+        }
+        
+        function createMolecules() {
+            if (reducingAgent) scene.remove(reducingAgent);
+            if (oxidizingAgent) scene.remove(oxidizingAgent);
+            electrons.forEach(e => scene.remove(e));
+            electrons = [];
+            products.forEach(p => scene.remove(p));
+            products = [];
+            
+            const reducingGeo = new THREE.SphereGeometry(1.2, 32, 32);
+            const reducingMat = new THREE.MeshStandardMaterial({
+                color: currentReaction.reducing.color,
+                roughness: 0.3,
+                metalness: 0.7,
+                emissive: currentReaction.reducing.color,
+                emissiveIntensity: 0.2
+            });
+            reducingAgent = new THREE.Mesh(reducingGeo, reducingMat);
+            reducingAgent.position.set(-4, 0, 0);
+            scene.add(reducingAgent);
+            
+            const reducingLabel = createTextSprite(currentReaction.reducing.name);
+            reducingLabel.position.set(0, 1.8, 0);
+            reducingAgent.add(reducingLabel);
+            
+            const oxidizingGeo = new THREE.SphereGeometry(1.2, 32, 32);
+            const oxidizingMat = new THREE.MeshStandardMaterial({
+                color: currentReaction.oxidizing.color,
+                roughness: 0.3,
+                metalness: 0.7,
+                emissive: currentReaction.oxidizing.color,
+                emissiveIntensity: 0.2
+            });
+            oxidizingAgent = new THREE.Mesh(oxidizingGeo, oxidizingMat);
+            oxidizingAgent.position.set(4, 0, 0);
+            scene.add(oxidizingAgent);
+            
+            const oxidizingLabel = createTextSprite(currentReaction.oxidizing.name);
+            oxidizingLabel.position.set(0, 1.8, 0);
+            oxidizingAgent.add(oxidizingLabel);
+            
+            updateUI();
+        }
+        
+        function createTextSprite(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+            
+            context.fillStyle = 'rgba(0, 0, 0, 0)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.font = 'bold 32px Inter, sans-serif';
+            context.fillStyle = '#ffffff';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(2, 0.5, 1);
+            
+            return sprite;
+        }
+        
+        function createElectron() {
+            const geo = new THREE.SphereGeometry(0.2, 16, 16);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xFB923C,
+                emissive: 0xFB923C,
+                emissiveIntensity: 0.8,
+                roughness: 0.2
+            });
+            const electron = new THREE.Mesh(geo, mat);
+            electron.position.copy(reducingAgent.position);
+            electron.userData = {
+                progress: 0,
+                startPos: reducingAgent.position.clone(),
+                endPos: oxidizingAgent.position.clone(),
+                active: true
+            };
+            scene.add(electron);
+            electrons.push(electron);
+            
+            const glow = new THREE.PointLight(0xFB923C, 0.5, 3);
+            electron.add(glow);
+        }
+        
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            const time = Date.now() * 0.001;
+            
+            if (reducingAgent) {
+                reducingAgent.rotation.y += 0.01;
+                reducingAgent.position.y = Math.sin(time * 2) * 0.2;
+            }
+            
+            if (oxidizingAgent) {
+                oxidizingAgent.rotation.y -= 0.01;
+                oxidizingAgent.position.y = Math.sin(time * 2 + Math.PI) * 0.2;
+            }
+            
+            if (isPlaying && reactionPhase === 1) {
+                progress += 0.002 * speedMultiplier;
+                
+                electrons.forEach(electron => {
+                    if (electron.userData.active) {
+                        electron.userData.progress += 0.01 * speedMultiplier;
+                        
+                        const t = electron.userData.progress;
+                        const height = 3;
+                        
+                        electron.position.x = electron.userData.startPos.x + 
+                            (electron.userData.endPos.x - electron.userData.startPos.x) * t;
+                        electron.position.y = electron.userData.startPos.y + 
+                            Math.sin(t * Math.PI) * height;
+                        electron.position.z = Math.sin(t * Math.PI * 2) * 0.5;
+                        
+                        if (electron.userData.progress >= 1) {
+                            electron.userData.active = false;
+                            electron.visible = false;
+                        }
+                    }
+                });
+                
+                const approaching = 1 - Math.abs(progress - 0.5) * 2;
+                if (progress < 0.5) {
+                    reducingAgent.position.x = -4 + progress * 4;
+                    oxidizingAgent.position.x = 4 - progress * 4;
+                }
+                
+                if (progress >= 1) {
+                    progress = 1;
+                    reactionPhase = 2;
+                    createProducts();
+                }
+                
+                updateUI();
+            }
+            
+            if (reactionPhase === 2) {
+                products.forEach((product, i) => {
+                    product.rotation.y += 0.02;
+                    if (i === 0) {
+                        product.position.x = -2 + Math.sin(time) * 0.2;
+                    } else {
+                        product.position.x = 2 + Math.sin(time + Math.PI) * 0.2;
+                    }
+                });
+            }
+            
+            electrons.forEach(electron => {
+                if (electron.userData.active) {
+                    electron.rotation.x += 0.1;
+                    electron.rotation.y += 0.15;
+                }
+            });
+            
+            renderer.render(scene, camera);
+        }
+        
+        function createProducts() {
+            document.getElementById('phaseText').textContent = '反应完成';
+            
+            reducingAgent.visible = false;
+            oxidizingAgent.visible = false;
+            
+            const product1Geo = new THREE.SphereGeometry(1, 32, 32);
+            const product1Mat = new THREE.MeshStandardMaterial({
+                color: 0x60A5FA,
+                emissive: 0x60A5FA,
+                emissiveIntensity: 0.3,
+                roughness: 0.3,
+                metalness: 0.6
+            });
+            const product1 = new THREE.Mesh(product1Geo, product1Mat);
+            product1.position.set(-2, 0, 0);
+            scene.add(product1);
+            
+            const label1 = createTextSprite(currentReaction.productReducing);
+            label1.position.set(0, 1.5, 0);
+            product1.add(label1);
+            products.push(product1);
+            
+            const product2Geo = new THREE.SphereGeometry(1, 32, 32);
+            const product2Mat = new THREE.MeshStandardMaterial({
+                color: 0xF87171,
+                emissive: 0xF87171,
+                emissiveIntensity: 0.3,
+                roughness: 0.3,
+                metalness: 0.6
+            });
+            const product2 = new THREE.Mesh(product2Geo, product2Mat);
+            product2.position.set(2, 0, 0);
+            scene.add(product2);
+            
+            const label2 = createTextSprite(currentReaction.productOxidizing);
+            label2.position.set(0, 1.5, 0);
+            product2.add(label2);
+            products.push(product2);
+        }
+        
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            
+            if (!isPlaying) {
+                isPlaying = true;
+                btn.textContent = '⏸ 暂停';
+                
+                if (reactionPhase === 0) {
+                    reactionPhase = 1;
+                    document.getElementById('phaseText').textContent = '电子转移中...';
+                    
+                    for (let i = 0; i < electronCount; i++) {
+                        setTimeout(() => createElectron(), i * 300);
+                    }
+                }
+            } else {
+                isPlaying = false;
+                btn.textContent = '▶ 继续';
+            }
+        }
+        
+        function stepSimulation() {
+            if (reactionPhase === 0) {
+                reactionPhase = 1;
+                document.getElementById('phaseText').textContent = '电子转移中...';
+                
+                for (let i = 0; i < electronCount; i++) {
+                    setTimeout(() => createElectron(), i * 300);
+                }
+            }
+            
+            progress += 0.05;
+            
+            if (progress >= 1 && reactionPhase === 1) {
+                progress = 1;
+                reactionPhase = 2;
+                createProducts();
+            }
+            
+            updateUI();
+        }
+        
+        function resetSimulation() {
+            isPlaying = false;
+            reactionPhase = 0;
+            progress = 0;
+            
+            document.getElementById('playBtn').textContent = '▶ 开始';
+            document.getElementById('phaseText').textContent = '准备反应';
+            
+            createMolecules();
+        }
+        
+        function randomExperiment() {
+            const types = Object.keys(reactionTypes);
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            document.getElementById('reactionType').value = randomType;
+            changeReactionType();
+            
+            const randomElectrons = [2, 4, 6, 8][Math.floor(Math.random() * 4)];
+            document.getElementById('electronSlider').value = randomElectrons;
+            electronCount = randomElectrons;
+            document.getElementById('electronValue').textContent = randomElectrons;
+            
+            resetSimulation();
+            
+            setTimeout(() => togglePlay(), 500);
+        }
+        
+        function changeReactionType() {
+            const type = document.getElementById('reactionType').value;
+            currentReaction = reactionTypes[type];
+            resetSimulation();
+        }
+        
+        function updateUI() {
+            document.getElementById('oxidizingAgent').textContent = currentReaction.oxidizing.name;
+            document.getElementById('reducingAgent').textContent = currentReaction.reducing.name;
+            document.getElementById('electronCount').textContent = Math.floor(progress * electronCount);
+            document.getElementById('reactionProgress').textContent = Math.floor(progress * 100) + '%';
+        }
+        
+        function initFormulas() {
+            katex.render(String.raw`\text{氧化: } M \rightarrow M^{n+} + ne^-`, document.getElementById('formula1'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            
+            katex.render(String.raw`\text{还原: } X^{m+} + me^- \rightarrow X`, document.getElementById('formula2'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            
+            katex.render(String.raw`\text{总反应: } M + X^{m+} \rightarrow M^{n+} + X`, document.getElementById('formula3'), {
+                displayMode: true,
+                throwOnError: false
+            });
+        }
+        
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d').parentElement;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        function onMouseWheel(event) {
+            event.preventDefault();
+            const zoomSpeed = 0.001;
+            camera.position.multiplyScalar(1 + event.deltaY * zoomSpeed);
+            camera.position.clampLength(5, 25);
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function showAbout() {
+            document.getElementById('aboutModal').classList.add('show');
+        }
+        
+        function hideAbout() {
+            document.getElementById('aboutModal').classList.remove('show');
+        }
+        
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            speedMultiplier = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = speedMultiplier.toFixed(1) + 'x';
+        });
+        
+        document.getElementById('electronSlider').addEventListener('input', (e) => {
+            electronCount = parseInt(e.target.value);
+            document.getElementById('electronValue').textContent = electronCount;
+        });
+        
+        document.getElementById('aboutModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) hideAbout();
+        });
+        
+        init();
+    </script>
+</body>
+</html>

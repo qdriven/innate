@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酸碱中和 | Acid-Base Neutralization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(180deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%);
+            --primary-gradient: linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #3B82F6 100%);
+            --acid-color: #F43F5E;
+            --base-color: #3B82F6;
+            --neutral-color: #10B981;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-gradient);
+            color: #F8FAFC;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+        .nav-bg {
+            background: rgba(30, 27, 75, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        #canvas-container {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 64px);
+            z-index: 0;
+        }
+        .sidebar {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 340px;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            z-index: 10;
+            transition: transform 0.3s ease;
+        }
+        .sidebar.collapsed { transform: translateX(-300px); }
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 360px;
+            z-index: 10;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(139, 92, 246, 0.3);
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #EC4899, #3B82F6);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4); }
+        .btn-glass {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: #F8FAFC;
+        }
+        .btn-glass:hover { background: rgba(255, 255, 255, 0.15); }
+        .ph-scale {
+            display: flex;
+            height: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        .ph-segment {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .ph-indicator {
+            width: 4px;
+            height: 32px;
+            background: white;
+            border-radius: 2px;
+            position: absolute;
+            top: -4px;
+            transition: left 0.3s ease;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .molecule-legend {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.2);
+            font-size: 12px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 280px; }
+            .sidebar.collapsed { transform: translateX(-240px); }
+            .control-panel { width: calc(100% - 40px); left: 20px; right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bg fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-6 z-20">
+        <div class="flex items-center gap-4">
+            <button id="toggleSidebar" class="btn btn-glass p-2">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                </svg>
+            </button>
+            <div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-blue-400 bg-clip-text text-transparent">
+                    酸碱中和反应
+                </h1>
+                <p class="text-xs text-slate-400">Acid-Base Neutralization</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="resetBtn" class="btn btn-glass text-sm">重置</button>
+            <button id="randomBtn" class="btn btn-primary text-sm">随机实验</button>
+            <button id="fullscreenBtn" class="btn btn-glass p-2">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <div id="canvas-container"></div>
+
+    <aside id="sidebar" class="sidebar glass m-4 p-5">
+        <div class="space-y-6">
+            <section>
+                <h2 class="text-lg font-semibold text-pink-300 mb-3 flex items-center gap-2">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="10" cy="10" r="8"/><path d="M10 6v4l2 2"/>
+                    </svg>
+                    学习目标
+                </h2>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-pink-500" id="obj1">
+                        <label for="obj1">理解酸碱中和反应的本质和过程</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-pink-500" id="obj2">
+                        <label for="obj2">掌握pH值的定义和计算方法</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-pink-500" id="obj3">
+                        <label for="obj3">了解强酸强碱、弱酸弱碱的区别</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-pink-500" id="obj4">
+                        <label for="obj4">认识酸碱中和在日常生活和工业中的应用</label>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-pink-300 mb-3">核心公式</h2>
+                <div class="space-y-3 text-sm">
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">中和反应</p>
+                        <div id="formula1" class="text-center"></div>
+                    </div>
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">pH定义</p>
+                        <div id="formula2" class="text-center"></div>
+                    </div>
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">水的离子积</p>
+                        <div id="formula3" class="text-center"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-pink-300 mb-3">原理解释</h2>
+                <div class="text-sm text-slate-300 space-y-3">
+                    <p>
+                        <span class="text-rose-400 font-medium">酸的本质：</span>
+                        酸是在水溶液中能电离出H⁺（质子）的物质。强酸（如HCl）完全电离，弱酸（如CH₃COOH）部分电离。
+                    </p>
+                    <p>
+                        <span class="text-blue-400 font-medium">碱的本质：</span>
+                        碱是在水溶液中能电离出OH⁻（氢氧根）的物质。强碱（如NaOH）完全电离，弱碱（如NH₃·H₂O）部分电离。
+                    </p>
+                    <p>
+                        <span class="text-emerald-400 font-medium">中和反应：</span>
+                        H⁺和OH⁻结合生成水（H₂O），同时释放热量。这是放热反应，反应热约为57.3 kJ/mol。
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-pink-300 mb-3">应用场景</h2>
+                <ul class="text-sm text-slate-300 space-y-2">
+                    <li class="flex items-start gap-2">
+                        <span class="text-rose-400">▸</span>
+                        <span><strong>胃酸过多</strong>：服用抗酸药（如氢氧化铝）中和过多胃酸</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-400">▸</span>
+                        <span><strong>农业土壤改良</strong>：用石灰中和酸性土壤</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-emerald-400">▸</span>
+                        <span><strong>工业废水处理</strong>：中和酸性或碱性废水</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-purple-400">▸</span>
+                        <span><strong>食品加工</strong>：调节食品pH值，改善口感和保质期</span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </aside>
+
+    <div class="control-panel glass p-5">
+        <h3 class="text-lg font-semibold text-pink-300 mb-4">实验控制面板</h3>
+        
+        <div class="space-y-4">
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">酸浓度 (H⁺)</span>
+                    <span id="acidConcValue" class="text-rose-300 font-mono">0.1 mol/L</span>
+                </div>
+                <input type="range" id="acidConcSlider" min="0.001" max="1" step="0.001" value="0.1">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">碱浓度 (OH⁻)</span>
+                    <span id="baseConcValue" class="text-blue-300 font-mono">0.1 mol/L</span>
+                </div>
+                <input type="range" id="baseConcSlider" min="0.001" max="1" step="0.001" value="0.1">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">酸体积</span>
+                    <span id="acidVolValue" class="text-rose-300 font-mono">50 mL</span>
+                </div>
+                <input type="range" id="acidVolSlider" min="10" max="100" step="5" value="50">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">碱体积</span>
+                    <span id="baseVolValue" class="text-blue-300 font-mono">50 mL</span>
+                </div>
+                <input type="range" id="baseVolSlider" min="10" max="100" step="5" value="50">
+            </div>
+
+            <div class="pt-2 border-t border-white/10">
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">当前pH值</span>
+                    <span id="phValue" class="text-emerald-300 font-mono text-lg">7.00</span>
+                </div>
+                <div class="relative">
+                    <div class="ph-scale">
+                        <div class="ph-segment" style="background: #FF0000;">1</div>
+                        <div class="ph-segment" style="background: #FF4500;">2</div>
+                        <div class="ph-segment" style="background: #FF8C00;">3</div>
+                        <div class="ph-segment" style="background: #FFD700;">4</div>
+                        <div class="ph-segment" style="background: #9ACD32;">5</div>
+                        <div class="ph-segment" style="background: #00FF00;">6</div>
+                        <div class="ph-segment" style="background: #00FA9A;">7</div>
+                        <div class="ph-segment" style="background: #00CED1;">8</div>
+                        <div class="ph-segment" style="background: #1E90FF;">9</div>
+                        <div class="ph-segment" style="background: #0000FF;">10</div>
+                        <div class="ph-segment" style="background: #4B0082;">11</div>
+                        <div class="ph-segment" style="background: #8B00FF;">12</div>
+                        <div class="ph-segment" style="background: #9400D3;">13</div>
+                        <div class="ph-segment" style="background: #8B0000;">14</div>
+                    </div>
+                    <div id="phIndicator" class="ph-indicator" style="left: 50%;"></div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-white/10">
+                <p class="text-sm text-slate-400 mb-2">分子图例</p>
+                <div class="molecule-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot bg-rose-400"></div>
+                        <span>H⁺</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot bg-blue-400"></div>
+                        <span>OH⁻</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot bg-emerald-400"></div>
+                        <span>H₂O</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot bg-cyan-400"></div>
+                        <span>Na⁺</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot bg-purple-400"></div>
+                        <span>Cl⁻</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot bg-yellow-400"></div>
+                        <span>NaCl</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button id="playBtn" class="btn btn-primary flex-1 flex items-center justify-center gap-2">
+                    <svg id="playIcon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span id="playText">开始反应</span>
+                </button>
+                <button id="stepBtn" class="btn btn-glass">单步</button>
+            </div>
+
+            <div class="flex items-center gap-3 text-sm">
+                <span class="text-slate-400">速度</span>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1" class="flex-1">
+                <span id="speedValue" class="text-slate-300 font-mono">1.0x</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let acidConc = 0.1;
+        let baseConc = 0.1;
+        let acidVol = 50;
+        let baseVol = 50;
+        let isPlaying = false;
+        let speed = 1.0;
+        let animationId = null;
+        let reactionProgress = 0;
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / (window.innerHeight - 64), 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight - 64);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        camera.position.set(0, 8, 16);
+        camera.lookAt(0, 0, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0xEC4899, 0.8, 50);
+        pointLight1.position.set(-8, 10, 8);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x3B82F6, 0.8, 50);
+        pointLight2.position.set(8, 10, 8);
+        scene.add(pointLight2);
+
+        let beakerGroup = new THREE.Group();
+        scene.add(beakerGroup);
+
+        let particles = [];
+        let waterMolecules = [];
+
+        function createBeaker() {
+            while(beakerGroup.children.length > 0) {
+                beakerGroup.remove(beakerGroup.children[0]);
+            }
+            particles = [];
+            waterMolecules = [];
+
+            const beakerGeometry = new THREE.CylinderGeometry(4, 3.5, 6, 32, 1, true);
+            const beakerMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.15,
+                roughness: 0.1,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            });
+            const beaker = new THREE.Mesh(beakerGeometry, beakerMaterial);
+            beakerGroup.add(beaker);
+
+            const bottomGeometry = new THREE.CircleGeometry(3.5, 32);
+            const bottomMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.15,
+                roughness: 0.1
+            });
+            const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial);
+            bottom.rotation.x = -Math.PI / 2;
+            bottom.position.y = -3;
+            beakerGroup.add(bottom);
+
+            const liquidGeometry = new THREE.CylinderGeometry(3.4, 3.4, 4, 32);
+            const liquidMaterial = new THREE.MeshPhysicalMaterial({
+                color: getLiquidColor(),
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.2,
+                metalness: 0.1
+            });
+            const liquid = new THREE.Mesh(liquidGeometry, liquidMaterial);
+            liquid.position.y = -1;
+            liquid.name = 'liquid';
+            beakerGroup.add(liquid);
+
+            const totalMoles = acidConc * acidVol / 1000 + baseConc * baseVol / 1000;
+            const particleCount = Math.min(200, Math.max(50, totalMoles * 500));
+
+            for (let i = 0; i < particleCount; i++) {
+                const isAcid = i < particleCount / 2;
+                const particle = createMoleculeParticle(isAcid ? 'H+' : 'OH-');
+                
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 2.5;
+                const x = Math.cos(angle) * radius * (isAcid ? -1 : 1);
+                const z = Math.sin(angle) * radius * (isAcid ? -1 : 1);
+                const y = -2.5 + Math.random() * 3;
+                
+                particle.position.set(x, y, z);
+                particle.userData = {
+                    type: isAcid ? 'H+' : 'OH-',
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02,
+                        (Math.random() - 0.5) * 0.02
+                    ),
+                    reacted: false
+                };
+                
+                particles.push(particle);
+                beakerGroup.add(particle);
+            }
+
+            for (let i = 0; i < 20; i++) {
+                const naParticle = createMoleculeParticle('Na+');
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 2;
+                naParticle.position.set(
+                    Math.cos(angle) * radius,
+                    -2.5 + Math.random() * 3,
+                    Math.sin(angle) * radius
+                );
+                naParticle.userData = { type: 'Na+', velocity: new THREE.Vector3() };
+                particles.push(naParticle);
+                beakerGroup.add(naParticle);
+            }
+
+            for (let i = 0; i < 20; i++) {
+                const clParticle = createMoleculeParticle('Cl-');
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 2;
+                clParticle.position.set(
+                    Math.cos(angle) * radius,
+                    -2.5 + Math.random() * 3,
+                    Math.sin(angle) * radius
+                );
+                clParticle.userData = { type: 'Cl-', velocity: new THREE.Vector3() };
+                particles.push(clParticle);
+                beakerGroup.add(clParticle);
+            }
+        }
+
+        function createMoleculeParticle(type) {
+            let color, size;
+            
+            switch(type) {
+                case 'H+':
+                    color = 0xF43F5E;
+                    size = 0.15;
+                    break;
+                case 'OH-':
+                    color = 0x3B82F6;
+                    size = 0.2;
+                    break;
+                case 'H2O':
+                    color = 0x10B981;
+                    size = 0.18;
+                    break;
+                case 'Na+':
+                    color = 0x22D3EE;
+                    size = 0.17;
+                    break;
+                case 'Cl-':
+                    color = 0x8B5CF6;
+                    size = 0.19;
+                    break;
+                default:
+                    color = 0x888888;
+                    size = 0.15;
+            }
+            
+            const geometry = new THREE.SphereGeometry(size, 16, 16);
+            const material = new THREE.MeshPhysicalMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.3,
+                roughness: 0.3,
+                metalness: 0.5
+            });
+            
+            return new THREE.Mesh(geometry, material);
+        }
+
+        function getLiquidColor() {
+            const ph = calculatePH();
+            
+            if (ph < 3) return 0xFF0000;
+            if (ph < 5) return 0xFF4500;
+            if (ph < 6) return 0xFFA500;
+            if (ph < 7) return 0x90EE90;
+            if (ph === 7) return 0x00FF7F;
+            if (ph < 8) return 0x00CED1;
+            if (ph < 10) return 0x1E90FF;
+            if (ph < 12) return 0x0000FF;
+            return 0x4B0082;
+        }
+
+        function calculatePH() {
+            const acidMoles = acidConc * acidVol / 1000;
+            const baseMoles = baseConc * baseConc / 1000;
+            const totalVol = (acidVol + baseVol) / 1000;
+            
+            const hPlusMoles = acidMoles * (1 - reactionProgress);
+            const ohMinusMoles = baseMoles * (1 - reactionProgress);
+            
+            const netAcid = hPlusMoles - ohMinusMoles;
+            
+            if (Math.abs(netAcid) < 1e-10) {
+                return 7;
+            } else if (netAcid > 0) {
+                const hPlusConc = netAcid / totalVol;
+                return -Math.log10(hPlusConc);
+            } else {
+                const ohMinusConc = -netAcid / totalVol;
+                const pOH = -Math.log10(ohMinusConc);
+                return 14 - pOH;
+            }
+        }
+
+        function updateParticles() {
+            const time = Date.now() * 0.001;
+            
+            particles.forEach(particle => {
+                if (particle.userData.type === 'H+' || particle.userData.type === 'OH-') {
+                    if (!particle.userData.reacted) {
+                        particle.position.add(particle.userData.velocity);
+                        
+                        if (particle.position.x > 2.8 || particle.position.x < -2.8) {
+                            particle.userData.velocity.x *= -1;
+                        }
+                        if (particle.position.y > 1 || particle.position.y < -2.8) {
+                            particle.userData.velocity.y *= -1;
+                        }
+                        if (particle.position.z > 2.8 || particle.position.z < -2.8) {
+                            particle.userData.velocity.z *= -1;
+                        }
+                        
+                        particle.position.x = Math.max(-2.8, Math.min(2.8, particle.position.x));
+                        particle.position.y = Math.max(-2.8, Math.min(1, particle.position.y));
+                        particle.position.z = Math.max(-2.8, Math.min(2.8, particle.position.z));
+                    }
+                } else {
+                    particle.position.x += Math.sin(time + particle.id) * 0.005;
+                    particle.position.y += Math.cos(time * 1.3 + particle.id) * 0.003;
+                    particle.position.z += Math.sin(time * 0.7 + particle.id) * 0.004;
+                }
+            });
+            
+            if (isPlaying && reactionProgress < 1) {
+                checkReactions();
+            }
+        }
+
+        function checkReactions() {
+            const hPlus = particles.filter(p => p.userData.type === 'H+' && !p.userData.reacted);
+            const ohMinus = particles.filter(p => p.userData.type === 'OH-' && !p.userData.reacted);
+            
+            for (let i = 0; i < hPlus.length; i++) {
+                for (let j = 0; j < ohMinus.length; j++) {
+                    const dist = hPlus[i].position.distanceTo(ohMinus[j].position);
+                    
+                    if (dist < 0.5 && Math.random() < 0.1 * speed) {
+                        hPlus[i].userData.reacted = true;
+                        ohMinus[j].userData.reacted = true;
+                        
+                        hPlus[i].visible = false;
+                        ohMinus[j].visible = false;
+                        
+                        const midPoint = new THREE.Vector3().addVectors(
+                            hPlus[i].position,
+                            ohMinus[j].position
+                        ).multiplyScalar(0.5);
+                        
+                        const waterMolecule = createMoleculeParticle('H2O');
+                        waterMolecule.position.copy(midPoint);
+                        waterMolecule.userData = { type: 'H2O' };
+                        particles.push(waterMolecule);
+                        beakerGroup.add(waterMolecule);
+                        
+                        reactionProgress = Math.min(1, reactionProgress + 0.01);
+                        
+                        createReactionEffect(midPoint);
+                        break;
+                    }
+                }
+            }
+        }
+
+        function createReactionEffect(position) {
+            const geometry = new THREE.RingGeometry(0.1, 0.3, 16);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x10B981,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide
+            });
+            const ring = new THREE.Mesh(geometry, material);
+            ring.position.copy(position);
+            ring.lookAt(camera.position);
+            beakerGroup.add(ring);
+            
+            let scale = 1;
+            const expandRing = () => {
+                scale += 0.1;
+                ring.scale.set(scale, scale, scale);
+                material.opacity -= 0.05;
+                
+                if (material.opacity > 0) {
+                    requestAnimationFrame(expandRing);
+                } else {
+                    beakerGroup.remove(ring);
+                }
+            };
+            expandRing();
+        }
+
+        function updateUI() {
+            document.getElementById('acidConcValue').textContent = `${acidConc.toFixed(3)} mol/L`;
+            document.getElementById('baseConcValue').textContent = `${baseConc.toFixed(3)} mol/L`;
+            document.getElementById('acidVolValue').textContent = `${acidVol} mL`;
+            document.getElementById('baseVolValue').textContent = `${baseVol} mL`;
+            
+            const ph = calculatePH();
+            document.getElementById('phValue').textContent = ph.toFixed(2);
+            
+            const phPercent = ((ph - 1) / 13) * 100;
+            document.getElementById('phIndicator').style.left = `${phPercent}%`;
+            
+            const liquid = beakerGroup.getObjectByName('liquid');
+            if (liquid) {
+                liquid.material.color.setHex(getLiquidColor());
+            }
+            
+            const hPlusCount = particles.filter(p => p.userData.type === 'H+' && !p.userData.reacted && p.visible).length;
+            const ohMinusCount = particles.filter(p => p.userData.type === 'OH-' && !p.userData.reacted && p.visible).length;
+            const waterCount = particles.filter(p => p.userData.type === 'H2O').length;
+        }
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            beakerGroup.rotation.y += 0.002;
+            
+            updateParticles();
+            updateUI();
+            
+            renderer.render(scene, camera);
+        }
+
+        document.getElementById('acidConcSlider').addEventListener('input', (e) => {
+            acidConc = parseFloat(e.target.value);
+            reactionProgress = 0;
+            createBeaker();
+            updateUI();
+        });
+
+        document.getElementById('baseConcSlider').addEventListener('input', (e) => {
+            baseConc = parseFloat(e.target.value);
+            reactionProgress = 0;
+            createBeaker();
+            updateUI();
+        });
+
+        document.getElementById('acidVolSlider').addEventListener('input', (e) => {
+            acidVol = parseInt(e.target.value);
+            reactionProgress = 0;
+            createBeaker();
+            updateUI();
+        });
+
+        document.getElementById('baseVolSlider').addEventListener('input', (e) => {
+            baseVol = parseInt(e.target.value);
+            reactionProgress = 0;
+            createBeaker();
+            updateUI();
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = `${speed.toFixed(1)}x`;
+        });
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            
+            if (isPlaying) {
+                playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+                playText.textContent = '暂停';
+            } else {
+                playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+                playText.textContent = '开始反应';
+            }
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            checkReactions();
+            updateUI();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            isPlaying = false;
+            reactionProgress = 0;
+            acidConc = 0.1;
+            baseConc = 0.1;
+            acidVol = 50;
+            baseVol = 50;
+            speed = 1.0;
+            
+            document.getElementById('acidConcSlider').value = 0.1;
+            document.getElementById('baseConcSlider').value = 0.1;
+            document.getElementById('acidVolSlider').value = 50;
+            document.getElementById('baseVolSlider').value = 50;
+            document.getElementById('speedSlider').value = 1;
+            
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            playText.textContent = '开始反应';
+            
+            createBeaker();
+            updateUI();
+        });
+
+        document.getElementById('randomBtn').addEventListener('click', () => {
+            acidConc = Math.round((0.01 + Math.random() * 0.99) * 1000) / 1000;
+            baseConc = Math.round((0.01 + Math.random() * 0.99) * 1000) / 1000;
+            acidVol = Math.round(20 + Math.random() * 80);
+            baseVol = Math.round(20 + Math.random() * 80);
+            
+            document.getElementById('acidConcSlider').value = acidConc;
+            document.getElementById('baseConcSlider').value = baseConc;
+            document.getElementById('acidVolSlider').value = acidVol;
+            document.getElementById('baseVolSlider').value = baseVol;
+            
+            reactionProgress = 0;
+            createBeaker();
+            updateUI();
+        });
+
+        document.getElementById('toggleSidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / (window.innerHeight - 64);
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight - 64);
+        });
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            
+            camera.position.x -= deltaX * 0.02;
+            camera.position.y += deltaY * 0.02;
+            camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        container.addEventListener('mouseup', () => isDragging = false);
+        container.addEventListener('mouseleave', () => isDragging = false);
+
+        container.addEventListener('wheel', (e) => {
+            camera.position.z += e.deltaY * 0.02;
+            camera.position.z = Math.max(8, Math.min(25, camera.position.z));
+        });
+
+        container.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            if (!isDragging || e.touches.length !== 1) return;
+            
+            const deltaX = e.touches[0].clientX - previousMousePosition.x;
+            const deltaY = e.touches[0].clientY - previousMousePosition.y;
+            
+            camera.position.x -= deltaX * 0.02;
+            camera.position.y += deltaY * 0.02;
+            camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        });
+
+        container.addEventListener('touchend', () => isDragging = false);
+
+        function initFormulas() {
+            katex.render("H^+ + OH^- \\rightarrow H_2O", document.getElementById('formula1'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            katex.render("pH = -\\log[H^+]", document.getElementById('formula2'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            katex.render("K_w = [H^+][OH^-] = 10^{-14}", document.getElementById('formula3'), {
+                displayMode: true,
+                throwOnError: false
+            });
+        }
+
+        createBeaker();
+        updateUI();
+        initFormulas();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量子隧穿效应 | Quantum Tunneling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(180deg, #0F172A 0%, #1E1B4B 50%, #312E81 100%);
+            --primary-gradient: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #3B82F6 100%);
+            --accent-violet: #8B5CF6;
+            --accent-indigo: #6366F1;
+            --accent-blue: #3B82F6;
+            --accent-cyan: #22D3EE;
+            --accent-pink: #EC4899;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-gradient);
+            color: #F8FAFC;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+        .nav-bg {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        #canvas-container {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 64px);
+            z-index: 0;
+        }
+        .sidebar {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 340px;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            z-index: 10;
+            transition: transform 0.3s ease;
+        }
+        .sidebar.collapsed { transform: translateX(-300px); }
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 360px;
+            z-index: 10;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(139, 92, 246, 0.3);
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4); }
+        .btn-glass {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: #F8FAFC;
+        }
+        .btn-glass:hover { background: rgba(255, 255, 255, 0.15); }
+        .probability-bar {
+            height: 24px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        .probability-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 280px; }
+            .sidebar.collapsed { transform: translateX(-240px); }
+            .control-panel { width: calc(100% - 40px); left: 20px; right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bg fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-6 z-20">
+        <div class="flex items-center gap-4">
+            <button id="toggleSidebar" class="btn btn-glass p-2">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                </svg>
+            </button>
+            <div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+                    量子隧穿效应
+                </h1>
+                <p class="text-xs text-slate-400">Quantum Tunneling Effect</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="resetBtn" class="btn btn-glass text-sm">重置</button>
+            <button id="randomBtn" class="btn btn-primary text-sm">随机实验</button>
+            <button id="fullscreenBtn" class="btn btn-glass p-2">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <div id="canvas-container"></div>
+
+    <aside id="sidebar" class="sidebar glass m-4 p-5">
+        <div class="space-y-6">
+            <section>
+                <h2 class="text-lg font-semibold text-violet-300 mb-3 flex items-center gap-2">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="10" cy="10" r="8"/><path d="M10 6v4l2 2"/>
+                    </svg>
+                    学习目标
+                </h2>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-violet-500" id="obj1">
+                        <label for="obj1">理解量子隧穿的基本概念和波粒二象性</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-violet-500" id="obj2">
+                        <label for="obj2">掌握隧穿概率与势垒高度、宽度的关系</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-violet-500" id="obj3">
+                        <label for="obj3">了解量子隧穿在扫描隧道显微镜中的应用</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-violet-500" id="obj4">
+                        <label for="obj4">认识经典物理与量子物理的根本差异</label>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-violet-300 mb-3">核心公式</h2>
+                <div class="space-y-3 text-sm">
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">隧穿概率（近似）</p>
+                        <div id="formula1" class="text-center"></div>
+                    </div>
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">衰减常数</p>
+                        <div id="formula2" class="text-center"></div>
+                    </div>
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">透射系数</p>
+                        <div id="formula3" class="text-center"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-violet-300 mb-3">原理解释</h2>
+                <div class="text-sm text-slate-300 space-y-3">
+                    <p>
+                        <span class="text-violet-400 font-medium">经典物理视角：</span>
+                        想象一个小球滚向一座山坡。如果小球的能量不足以爬过山坡顶部，它就会原路返回。这就是经典物理的"常识"。
+                    </p>
+                    <p>
+                        <span class="text-cyan-400 font-medium">量子物理视角：</span>
+                        但在量子世界中，粒子不仅是"小球"，还是"波"。波函数可以穿透势垒，在另一侧出现的概率不为零！这就像你能"穿墙而过"，虽然概率极小。
+                    </p>
+                    <p>
+                        <span class="text-pink-400 font-medium">波函数衰减：</span>
+                        在势垒内部，波函数呈指数衰减。势垒越高越宽，衰减越剧烈，隧穿概率越小。
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-violet-300 mb-3">为什么重要？</h2>
+                <ul class="text-sm text-slate-300 space-y-2">
+                    <li class="flex items-start gap-2">
+                        <span class="text-cyan-400">▸</span>
+                        <span><strong>扫描隧道显微镜(STM)</strong>：利用隧穿电流观测原子级表面结构</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-pink-400">▸</span>
+                        <span><strong>太阳核聚变</strong>：质子通过隧穿克服库仑势垒，点燃太阳</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-violet-400">▸</span>
+                        <span><strong>闪存存储</strong>：电子通过隧穿进出浮栅，实现数据存储</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-400">▸</span>
+                        <span><strong>酶催化</strong>：氢原子隧穿加速生化反应</span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </aside>
+
+    <div class="control-panel glass p-5">
+        <h3 class="text-lg font-semibold text-violet-300 mb-4">实验控制面板</h3>
+        
+        <div class="space-y-4">
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">粒子能量 (E)</span>
+                    <span id="energyValue" class="text-violet-300 font-mono">5.0 eV</span>
+                </div>
+                <input type="range" id="energySlider" min="1" max="15" step="0.1" value="5">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">势垒高度 (V₀)</span>
+                    <span id="barrierHeightValue" class="text-pink-300 font-mono">10.0 eV</span>
+                </div>
+                <input type="range" id="barrierHeightSlider" min="5" max="20" step="0.5" value="10">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">势垒宽度 (a)</span>
+                    <span id="barrierWidthValue" class="text-cyan-300 font-mono">1.0 nm</span>
+                </div>
+                <input type="range" id="barrierWidthSlider" min="0.2" max="3" step="0.1" value="1">
+            </div>
+
+            <div class="pt-2 border-t border-white/10">
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">衰减常数 κ</span>
+                    <span id="kappaValue" class="text-blue-300 font-mono">0.00</span>
+                </div>
+                <div class="flex justify-between text-sm mb-3">
+                    <span class="text-slate-400">隧穿概率 T</span>
+                    <span id="tunnelProbValue" class="text-emerald-300 font-mono">0.00%</span>
+                </div>
+                
+                <div class="space-y-2">
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-500 mb-1">
+                            <span>透射概率</span>
+                            <span id="transPercent">0%</span>
+                        </div>
+                        <div class="probability-bar">
+                            <div id="transBar" class="probability-fill bg-gradient-to-r from-violet-500 to-cyan-400" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-500 mb-1">
+                            <span>反射概率</span>
+                            <span id="reflectPercent">100%</span>
+                        </div>
+                        <div class="probability-bar">
+                            <div id="reflectBar" class="probability-fill bg-gradient-to-r from-pink-500 to-orange-400" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button id="playBtn" class="btn btn-primary flex-1 flex items-center justify-center gap-2">
+                    <svg id="playIcon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span id="playText">发射粒子</span>
+                </button>
+                <button id="stepBtn" class="btn btn-glass">单步</button>
+            </div>
+
+            <div class="flex items-center gap-3 text-sm">
+                <span class="text-slate-400">速度</span>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1" class="flex-1">
+                <span id="speedValue" class="text-slate-300 font-mono">1.0x</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hbar = 1.055e-34;
+        const m_e = 9.109e-31;
+        const eV_to_J = 1.602e-19;
+        const nm_to_m = 1e-9;
+
+        let energy = 5.0;
+        let barrierHeight = 10.0;
+        let barrierWidth = 1.0;
+        let isPlaying = false;
+        let speed = 1.0;
+        let particles = [];
+        let animationId = null;
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / (window.innerHeight - 64), 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight - 64);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        camera.position.set(0, 8, 18);
+        camera.lookAt(0, 0, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0x8B5CF6, 1, 50);
+        pointLight1.position.set(-10, 10, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x22D3EE, 0.8, 50);
+        pointLight2.position.set(10, 5, -10);
+        scene.add(pointLight2);
+
+        let barrierGroup = new THREE.Group();
+        scene.add(barrierGroup);
+
+        function createBarrier() {
+            while(barrierGroup.children.length > 0) {
+                barrierGroup.remove(barrierGroup.children[0]);
+            }
+
+            const barrierGeometry = new THREE.BoxGeometry(barrierWidth * 2, 6, 4);
+            const barrierMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xEC4899,
+                transparent: true,
+                opacity: 0.4,
+                roughness: 0.1,
+                metalness: 0.3,
+                side: THREE.DoubleSide
+            });
+            const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
+            barrier.position.y = 3;
+            barrierGroup.add(barrier);
+
+            const edgeGeometry = new THREE.EdgesGeometry(barrierGeometry);
+            const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xEC4899, linewidth: 2 });
+            const edges = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+            edges.position.y = 3;
+            barrierGroup.add(edges);
+
+            const labelCanvas = document.createElement('canvas');
+            labelCanvas.width = 256;
+            labelCanvas.height = 64;
+            const ctx = labelCanvas.getContext('2d');
+            ctx.fillStyle = '#EC4899';
+            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`V₀ = ${barrierHeight.toFixed(1)} eV`, 128, 40);
+            
+            const labelTexture = new THREE.CanvasTexture(labelCanvas);
+            const labelMaterial = new THREE.SpriteMaterial({ map: labelTexture, transparent: true });
+            const labelSprite = new THREE.Sprite(labelMaterial);
+            labelSprite.scale.set(4, 1, 1);
+            labelSprite.position.set(0, 7, 0);
+            barrierGroup.add(labelSprite);
+        }
+
+        const gridHelper = new THREE.GridHelper(40, 40, 0x3B82F6, 0x1E3A5F);
+        gridHelper.position.y = -0.1;
+        scene.add(gridHelper);
+
+        const axisGeometry = new THREE.BufferGeometry();
+        const axisVertices = new Float32Array([
+            -20, 0, 0, 20, 0, 0,
+            0, 0, -10, 0, 0, 10
+        ]);
+        axisGeometry.setAttribute('position', new THREE.BufferAttribute(axisVertices, 3));
+        const axisMaterial = new THREE.LineBasicMaterial({ color: 0x6366F1, opacity: 0.5, transparent: true });
+        const axisLines = new THREE.LineSegments(axisGeometry, axisMaterial);
+        scene.add(axisLines);
+
+        function createWavefunctionGeometry(xStart, xEnd, amplitude, isDecaying, decayRate) {
+            const points = [];
+            const segments = 100;
+            const wavelength = 2;
+            
+            for (let i = 0; i <= segments; i++) {
+                const x = xStart + (xEnd - xStart) * (i / segments);
+                let y;
+                
+                if (isDecaying) {
+                    const distFromStart = x - xStart;
+                    y = amplitude * Math.exp(-decayRate * distFromStart) * Math.cos(x * Math.PI / wavelength * 2);
+                } else {
+                    y = amplitude * Math.cos(x * Math.PI / wavelength * 2);
+                }
+                
+                points.push(new THREE.Vector3(x, y + 0.5, 0));
+            }
+            
+            return points;
+        }
+
+        let wavefunctionLines = [];
+
+        function updateWavefunction() {
+            wavefunctionLines.forEach(line => scene.remove(line));
+            wavefunctionLines = [];
+
+            const kappa = calculateKappa();
+            const T = calculateTunnelProbability();
+
+            const incidentPoints = createWavefunctionGeometry(-15, -barrierWidth, 1.5, false, 0);
+            const incidentGeometry = new THREE.BufferGeometry().setFromPoints(incidentPoints);
+            const incidentMaterial = new THREE.LineBasicMaterial({ color: 0x8B5CF6, linewidth: 2 });
+            const incidentLine = new THREE.Line(incidentGeometry, incidentMaterial);
+            scene.add(incidentLine);
+            wavefunctionLines.push(incidentLine);
+
+            const barrierPoints = createWavefunctionGeometry(-barrierWidth, barrierWidth, 1.5, true, kappa * 0.5);
+            const barrierGeometry = new THREE.BufferGeometry().setFromPoints(barrierPoints);
+            const barrierMaterial = new THREE.LineBasicMaterial({ color: 0xEC4899, linewidth: 2, opacity: 0.7, transparent: true });
+            const barrierLine = new THREE.Line(barrierGeometry, barrierMaterial);
+            scene.add(barrierLine);
+            wavefunctionLines.push(barrierLine);
+
+            const transmittedAmplitude = Math.sqrt(T) * 1.5;
+            const transmittedPoints = createWavefunctionGeometry(barrierWidth, 15, transmittedAmplitude, false, 0);
+            const transmittedGeometry = new THREE.BufferGeometry().setFromPoints(transmittedPoints);
+            const transmittedMaterial = new THREE.LineBasicMaterial({ color: 0x22D3EE, linewidth: 2 });
+            const transmittedLine = new THREE.Line(transmittedGeometry, transmittedMaterial);
+            scene.add(transmittedLine);
+            wavefunctionLines.push(transmittedLine);
+        }
+
+        function calculateKappa() {
+            if (energy >= barrierHeight) return 0;
+            const deltaE = (barrierHeight - energy) * eV_to_J;
+            return Math.sqrt(2 * m_e * deltaE) / hbar * nm_to_m;
+        }
+
+        function calculateTunnelProbability() {
+            if (energy >= barrierHeight) return 1;
+            const kappa = calculateKappa();
+            const a = barrierWidth * nm_to_m;
+            const exponent = -2 * kappa * a;
+            const T = Math.exp(exponent);
+            return Math.min(T, 1);
+        }
+
+        function createParticle() {
+            const geometry = new THREE.SphereGeometry(0.3, 32, 32);
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0x8B5CF6,
+                emissive: 0x8B5CF6,
+                emissiveIntensity: 0.5,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const particle = new THREE.Mesh(geometry, material);
+            particle.position.set(-15, 0.5, 0);
+            
+            const glowGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x8B5CF6,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            particle.add(glow);
+            
+            scene.add(particle);
+            
+            return {
+                mesh: particle,
+                x: -15,
+                speed: 0.08 * speed,
+                state: 'incident',
+                tunneled: false
+            };
+        }
+
+        function updateParticles() {
+            const T = calculateTunnelProbability();
+            
+            particles.forEach((p, index) => {
+                if (p.state === 'incident') {
+                    p.x += p.speed;
+                    p.mesh.position.x = p.x;
+                    
+                    p.mesh.position.y = 0.5 + Math.sin(p.x * 2) * 0.3;
+                    
+                    if (p.x >= -barrierWidth) {
+                        if (Math.random() < T) {
+                            p.state = 'tunneling';
+                            p.tunneled = true;
+                            p.mesh.material.color.setHex(0x22D3EE);
+                            p.mesh.material.emissive.setHex(0x22D3EE);
+                        } else {
+                            p.state = 'reflecting';
+                            p.mesh.material.color.setHex(0xF59E0B);
+                            p.mesh.material.emissive.setHex(0xF59E0B);
+                        }
+                    }
+                } else if (p.state === 'tunneling') {
+                    p.x += p.speed * 0.5;
+                    p.mesh.position.x = p.x;
+                    p.mesh.material.opacity = 0.5 + 0.5 * ((p.x + barrierWidth) / (2 * barrierWidth));
+                    
+                    if (p.x >= barrierWidth) {
+                        p.state = 'transmitted';
+                    }
+                } else if (p.state === 'transmitted') {
+                    p.x += p.speed;
+                    p.mesh.position.x = p.x;
+                    p.mesh.position.y = 0.5 + Math.sin(p.x * 2) * 0.3;
+                    
+                    if (p.x > 20) {
+                        scene.remove(p.mesh);
+                        particles.splice(index, 1);
+                    }
+                } else if (p.state === 'reflecting') {
+                    p.x -= p.speed;
+                    p.mesh.position.x = p.x;
+                    p.mesh.position.y = 0.5 + Math.sin(p.x * 2) * 0.3;
+                    
+                    if (p.x < -20) {
+                        scene.remove(p.mesh);
+                        particles.splice(index, 1);
+                    }
+                }
+            });
+        }
+
+        function updateUI() {
+            const kappa = calculateKappa();
+            const T = calculateTunnelProbability();
+            
+            document.getElementById('energyValue').textContent = `${energy.toFixed(1)} eV`;
+            document.getElementById('barrierHeightValue').textContent = `${barrierHeight.toFixed(1)} eV`;
+            document.getElementById('barrierWidthValue').textContent = `${barrierWidth.toFixed(1)} nm`;
+            document.getElementById('kappaValue').textContent = `${kappa.toFixed(2)} nm⁻¹`;
+            document.getElementById('tunnelProbValue').textContent = `${(T * 100).toFixed(2)}%`;
+            
+            const transPercent = T * 100;
+            const reflectPercent = (1 - T) * 100;
+            
+            document.getElementById('transPercent').textContent = `${transPercent.toFixed(1)}%`;
+            document.getElementById('reflectPercent').textContent = `${reflectPercent.toFixed(1)}%`;
+            document.getElementById('transBar').style.width = `${transPercent}%`;
+            document.getElementById('reflectBar').style.width = `${reflectPercent}%`;
+        }
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            if (isPlaying) {
+                updateParticles();
+                
+                if (particles.length < 5 && Math.random() < 0.02) {
+                    particles.push(createParticle());
+                }
+            }
+            
+            updateWavefunction();
+            
+            renderer.render(scene, camera);
+        }
+
+        document.getElementById('energySlider').addEventListener('input', (e) => {
+            energy = parseFloat(e.target.value);
+            updateUI();
+            createBarrier();
+        });
+
+        document.getElementById('barrierHeightSlider').addEventListener('input', (e) => {
+            barrierHeight = parseFloat(e.target.value);
+            updateUI();
+            createBarrier();
+        });
+
+        document.getElementById('barrierWidthSlider').addEventListener('input', (e) => {
+            barrierWidth = parseFloat(e.target.value);
+            updateUI();
+            createBarrier();
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = `${speed.toFixed(1)}x`;
+            particles.forEach(p => p.speed = 0.08 * speed);
+        });
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            
+            if (isPlaying) {
+                playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+                playText.textContent = '暂停';
+            } else {
+                playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+                playText.textContent = '发射粒子';
+            }
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            if (particles.length < 10) {
+                particles.push(createParticle());
+            }
+            updateParticles();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            particles.forEach(p => scene.remove(p.mesh));
+            particles = [];
+            isPlaying = false;
+            energy = 5.0;
+            barrierHeight = 10.0;
+            barrierWidth = 1.0;
+            speed = 1.0;
+            
+            document.getElementById('energySlider').value = 5;
+            document.getElementById('barrierHeightSlider').value = 10;
+            document.getElementById('barrierWidthSlider').value = 1;
+            document.getElementById('speedSlider').value = 1;
+            
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            playText.textContent = '发射粒子';
+            
+            updateUI();
+            createBarrier();
+        });
+
+        document.getElementById('randomBtn').addEventListener('click', () => {
+            energy = Math.round((3 + Math.random() * 10) * 10) / 10;
+            barrierHeight = Math.round((6 + Math.random() * 12) * 10) / 10;
+            barrierWidth = Math.round((0.3 + Math.random() * 2.2) * 10) / 10;
+            
+            document.getElementById('energySlider').value = energy;
+            document.getElementById('barrierHeightSlider').value = barrierHeight;
+            document.getElementById('barrierWidthSlider').value = barrierWidth;
+            
+            updateUI();
+            createBarrier();
+        });
+
+        document.getElementById('toggleSidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / (window.innerHeight - 64);
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight - 64);
+        });
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            
+            camera.position.x -= deltaX * 0.02;
+            camera.position.y += deltaY * 0.02;
+            camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        container.addEventListener('mouseup', () => isDragging = false);
+        container.addEventListener('mouseleave', () => isDragging = false);
+
+        container.addEventListener('wheel', (e) => {
+            camera.position.z += e.deltaY * 0.02;
+            camera.position.z = Math.max(8, Math.min(30, camera.position.z));
+        });
+
+        container.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            if (!isDragging || e.touches.length !== 1) return;
+            
+            const deltaX = e.touches[0].clientX - previousMousePosition.x;
+            const deltaY = e.touches[0].clientY - previousMousePosition.y;
+            
+            camera.position.x -= deltaX * 0.02;
+            camera.position.y += deltaY * 0.02;
+            camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        });
+
+        container.addEventListener('touchend', () => isDragging = false);
+
+        function initFormulas() {
+            katex.render("T \\approx e^{-2\\kappa a}", document.getElementById('formula1'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            katex.render("\\kappa = \\frac{\\sqrt{2m(V_0 - E)}}{\\hbar}", document.getElementById('formula2'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            katex.render("|\\psi|^2 \\propto T", document.getElementById('formula3'), {
+                displayMode: true,
+                throwOnError: false
+            });
+        }
+
+        createBarrier();
+        updateUI();
+        initFormulas();
+        animate();
+    </script>
+</body>
+</html>

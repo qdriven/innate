@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有丝分裂 | Mitosis</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            --bg-gradient: linear-gradient(180deg, #0F172A 0%, #312E81 50%, #831843 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --accent-purple: #A78BFA;
+            --accent-pink: #F472B6;
+            --accent-blue: #60A5FA;
+            --accent-cyan: #22D3EE;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .nav {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(167, 139, 250, 0.2);
+            border-color: var(--accent-purple);
+        }
+        
+        .main-container {
+            display: flex;
+            margin-top: 4rem;
+            min-height: calc(100vh - 4rem);
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 4rem);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-purple);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .learning-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .learning-item input[type="checkbox"] {
+            margin-top: 0.25rem;
+            accent-color: var(--accent-purple);
+        }
+        
+        .phase-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .phase-card.active {
+            border-color: var(--accent-purple);
+            background: rgba(167, 139, 250, 0.15);
+        }
+        
+        .phase-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent-pink);
+            margin-bottom: 0.25rem;
+        }
+        
+        .phase-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .concept-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        
+        .highlight {
+            color: var(--accent-purple);
+            font-weight: 500;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(167, 139, 250, 0.1) 0%, transparent 70%);
+        }
+        
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .control-panel {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            max-width: 90%;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .control-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .control-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-purple);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(167, 139, 250, 0.5);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .control-btn:hover {
+            background: rgba(167, 139, 250, 0.2);
+            border-color: var(--accent-purple);
+        }
+        
+        .control-btn.active {
+            background: var(--accent-purple);
+            color: #000;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-width: 200px;
+        }
+        
+        .info-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .info-label {
+            color: var(--text-secondary);
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: var(--accent-purple);
+        }
+        
+        .phase-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .phase-text {
+            font-size: 0.875rem;
+            color: var(--accent-purple);
+            font-weight: 600;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 8rem;
+            right: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .legend-color.chromosome { background: #A78BFA; }
+        .legend-color.centriole { background: #F472B6; }
+        .legend-color.spindle { background: #22D3EE; }
+        .legend-color.membrane { background: #34D399; }
+        .legend-color.nucleus { background: #60A5FA; }
+        
+        .about-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        .about-modal.show {
+            display: flex;
+        }
+        
+        .about-content {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .about-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .about-content p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+                width: 95%;
+                gap: 1rem;
+            }
+            
+            .info-panel {
+                top: auto;
+                bottom: 12rem;
+                right: 0.5rem;
+                left: 0.5rem;
+                min-width: auto;
+            }
+            
+            .legend {
+                bottom: 18rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-title">🔬 有丝分裂 | Mitosis</div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="resetSimulation()">重置</button>
+            <button class="nav-btn" onclick="randomExperiment()">随机实验</button>
+            <button class="nav-btn" onclick="toggleFullscreen()">全屏</button>
+            <button class="nav-btn" onclick="showAbout()">关于</button>
+        </div>
+    </nav>
+    
+    <div class="main-container">
+        <aside class="sidebar">
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">🎯 学习目标</h3>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>理解有丝分裂的六个阶段</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>认识染色体、纺锤体等结构</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>理解遗传物质均等分配的机制</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>区分别各阶段的特征</span>
+                </label>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">📊 分裂阶段</h3>
+                <div class="phase-card" id="phase0">
+                    <div class="phase-name">间期 (Interphase)</div>
+                    <div class="phase-desc">DNA复制，细胞生长，准备分裂</div>
+                </div>
+                <div class="phase-card" id="phase1">
+                    <div class="phase-name">前期 (Prophase)</div>
+                    <div class="phase-desc">染色质凝缩，核膜解体，纺锤体形成</div>
+                </div>
+                <div class="phase-card" id="phase2">
+                    <div class="phase-name">前中期 (Prometaphase)</div>
+                    <div class="phase-desc">染色体连接纺锤丝，开始运动</div>
+                </div>
+                <div class="phase-card" id="phase3">
+                    <div class="phase-name">中期 (Metaphase)</div>
+                    <div class="phase-desc">染色体排列在赤道板上</div>
+                </div>
+                <div class="phase-card" id="phase4">
+                    <div class="phase-name">后期 (Anaphase)</div>
+                    <div class="phase-desc">姐妹染色单体分离，移向两极</div>
+                </div>
+                <div class="phase-card" id="phase5">
+                    <div class="phase-name">末期 (Telophase)</div>
+                    <div class="phase-desc">核膜重建，染色体解旋，胞质分裂</div>
+                </div>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">💡 核心概念</h3>
+                <p class="concept-text">
+                    <span class="highlight">有丝分裂</span>是真核细胞分裂的主要方式，确保遗传物质均等分配到两个子细胞。
+                </p>
+                <p class="concept-text">
+                    <span class="highlight">染色体</span>：由DNA和蛋白质组成，携带遗传信息
+                </p>
+                <p class="concept-text">
+                    <span class="highlight">纺锤体</span>：由微管组成，负责染色体的移动
+                </p>
+                <p class="concept-text">
+                    <span class="highlight">细胞周期</span>：G₁ → S → G₂ → M期
+                </p>
+            </section>
+        </aside>
+        
+        <div class="canvas-container">
+            <canvas id="canvas3d"></canvas>
+            
+            <div class="phase-indicator">
+                <span class="phase-text" id="phaseText">间期 (Interphase)</span>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-title">分裂状态</div>
+                <div class="info-row">
+                    <span class="info-label">当前阶段:</span>
+                    <span class="info-value" id="currentPhase">间期</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">染色体数:</span>
+                    <span class="info-value" id="chromosomeCount">46</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">DNA分子数:</span>
+                    <span class="info-value" id="dnaCount">92</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">进度:</span>
+                    <span class="info-value" id="progressValue">0%</span>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color chromosome"></div>
+                    <span>染色体</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color centriole"></div>
+                    <span>中心体</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color spindle"></div>
+                    <span>纺锤丝</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color membrane"></div>
+                    <span>细胞膜</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color nucleus"></div>
+                    <span>核膜</span>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <span class="control-label">动画速度</span>
+                    <div class="slider-container">
+                        <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+                        <span class="control-value" id="speedValue">1.0x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">染色体对数</span>
+                    <div class="slider-container">
+                        <input type="range" id="chromosomeSlider" min="2" max="8" step="2" value="4">
+                        <span class="control-value" id="chromosomeValue">4</span>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="control-btn" id="playBtn" onclick="togglePlay()">▶ 开始</button>
+                    <button class="control-btn" onclick="stepSimulation()">单步</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="about-modal" id="aboutModal" onclick="hideAbout()">
+        <div class="about-content" onclick="event.stopPropagation()">
+            <h3>🔬 有丝分裂</h3>
+            <p>
+                有丝分裂是真核生物细胞分裂的主要方式，通过精确的机制将遗传物质均等分配到两个子细胞中。
+            </p>
+            <p>
+                通过这个3D交互式模拟，你可以观察从间期到末期的完整分裂过程，
+                理解染色体如何复制、排列和分离！
+            </p>
+            <button class="control-btn" onclick="hideAbout()">关闭</button>
+        </div>
+    </div>
+    
+    <script>
+        let scene, camera, renderer;
+        let cell, nucleus, nuclearMembrane;
+        let chromosomes = [];
+        let centrioles = [];
+        let spindles = [];
+        let isPlaying = false;
+        let currentPhase = 0;
+        let phaseProgress = 0;
+        let animationId;
+        
+        const phases = [
+            { name: '间期', nameEn: 'Interphase' },
+            { name: '前期', nameEn: 'Prophase' },
+            { name: '前中期', nameEn: 'Prometaphase' },
+            { name: '中期', nameEn: 'Metaphase' },
+            { name: '后期', nameEn: 'Anaphase' },
+            { name: '末期', nameEn: 'Telophase' }
+        ];
+        
+        let speedMultiplier = 1;
+        let chromosomePairs = 4;
+        
+        const colors = {
+            chromosome: 0xA78BFA,
+            chromosomeSister: 0xF472B6,
+            centriole: 0xF472B6,
+            spindle: 0x22D3EE,
+            membrane: 0x34D399,
+            nucleus: 0x60A5FA,
+            cytoplasm: 0x3B82F6
+        };
+        
+        function init() {
+            const canvas = document.getElementById('canvas3d');
+            const container = canvas.parentElement;
+            
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 5, 15);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight1 = new THREE.PointLight(0xA78BFA, 1, 50);
+            pointLight1.position.set(5, 5, 5);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0xF472B6, 0.8, 50);
+            pointLight2.position.set(-5, 3, -5);
+            scene.add(pointLight2);
+            
+            createCell();
+            initPhaseCards();
+            
+            window.addEventListener('resize', onWindowResize);
+            canvas.addEventListener('wheel', onMouseWheel);
+            
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                const rotationSpeed = 0.005;
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * rotationSpeed;
+                spherical.phi += deltaY * rotationSpeed;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mouseup', () => isDragging = false);
+            canvas.addEventListener('mouseleave', () => isDragging = false);
+            
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+                
+                const rotationSpeed = 0.005;
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * rotationSpeed;
+                spherical.phi += deltaY * rotationSpeed;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+            
+            canvas.addEventListener('touchend', () => isDragging = false);
+            
+            animate();
+        }
+        
+        function createCell() {
+            cell = new THREE.Group();
+            
+            const cellGeo = new THREE.SphereGeometry(5, 32, 32);
+            const cellMat = new THREE.MeshStandardMaterial({
+                color: colors.cytoplasm,
+                transparent: true,
+                opacity: 0.2,
+                roughness: 0.5,
+                side: THREE.DoubleSide
+            });
+            const cellMesh = new THREE.Mesh(cellGeo, cellMat);
+            cell.add(cellMesh);
+            
+            nuclearMembrane = new THREE.Group();
+            const nucleusGeo = new THREE.SphereGeometry(2.5, 32, 32);
+            const nucleusMat = new THREE.MeshStandardMaterial({
+                color: colors.nucleus,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.5,
+                side: THREE.DoubleSide
+            });
+            const nucleusMesh = new THREE.Mesh(nucleusGeo, nucleusMat);
+            nuclearMembrane.add(nucleusMesh);
+            cell.add(nuclearMembrane);
+            
+            createChromosomes();
+            createCentrioles();
+            
+            scene.add(cell);
+        }
+        
+        function createChromosomes() {
+            chromosomes.forEach(c => cell.remove(c));
+            chromosomes = [];
+            
+            for (let i = 0; i < chromosomePairs; i++) {
+                const chromosome = new THREE.Group();
+                
+                const angle = (i / chromosomePairs) * Math.PI * 2;
+                const radius = 1;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                const sister1 = createChromatid(colors.chromosome);
+                sister1.position.x = -0.2;
+                sister1.userData.sister = true;
+                chromosome.add(sister1);
+                
+                const sister2 = createChromatid(colors.chromosomeSister);
+                sister2.position.x = 0.2;
+                sister2.userData.sister = true;
+                chromosome.add(sister2);
+                
+                const centromere = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 8, 8),
+                    new THREE.MeshStandardMaterial({ color: 0xFBBF24 })
+                );
+                centromere.position.y = 0;
+                chromosome.add(centromere);
+                
+                chromosome.position.set(x, (Math.random() - 0.5) * 2, z);
+                chromosome.rotation.z = Math.random() * 0.5 - 0.25;
+                chromosome.userData = {
+                    originalPos: chromosome.position.clone(),
+                    angle: angle,
+                    separated: false
+                };
+                
+                nuclearMembrane.add(chromosome);
+                chromosomes.push(chromosome);
+            }
+        }
+        
+        function createChromatid(color) {
+            const chromatid = new THREE.Group();
+            
+            const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 8);
+            const armMat = new THREE.MeshStandardMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.2,
+                roughness: 0.4
+            });
+            
+            const upperArm = new THREE.Mesh(armGeo, armMat);
+            upperArm.position.y = 0.6;
+            chromatid.add(upperArm);
+            
+            const lowerArm = new THREE.Mesh(armGeo, armMat);
+            lowerArm.position.y = -0.6;
+            chromatid.add(lowerArm);
+            
+            return chromatid;
+        }
+        
+        function createCentrioles() {
+            centrioles.forEach(c => cell.remove(c));
+            centrioles = [];
+            
+            for (let i = 0; i < 2; i++) {
+                const centriole = new THREE.Group();
+                
+                const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.6, 16);
+                const bodyMat = new THREE.MeshStandardMaterial({
+                    color: colors.centriole,
+                    emissive: colors.centriole,
+                    emissiveIntensity: 0.3,
+                    roughness: 0.3
+                });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                centriole.add(body);
+                
+                const pos = i === 0 ? new THREE.Vector3(-4, 0, 0) : new THREE.Vector3(4, 0, 0);
+                centriole.position.copy(pos);
+                centriole.userData = { originalPos: pos.clone(), index: i };
+                
+                cell.add(centriole);
+                centrioles.push(centriole);
+            }
+        }
+        
+        function createSpindle(from, to) {
+            const points = [from.clone(), to.clone()];
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({
+                color: colors.spindle,
+                transparent: true,
+                opacity: 0.6
+            });
+            const spindle = new THREE.Line(geo, mat);
+            spindle.userData = { from: from.clone(), to: to.clone() };
+            cell.add(spindle);
+            spindles.push(spindle);
+            return spindle;
+        }
+        
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            const time = Date.now() * 0.001;
+            
+            if (cell) {
+                cell.rotation.y += 0.002;
+            }
+            
+            chromosomes.forEach((chromosome, i) => {
+                chromosome.rotation.y += 0.01;
+            });
+            
+            if (isPlaying) {
+                phaseProgress += 0.002 * speedMultiplier;
+                
+                updatePhase();
+                
+                if (phaseProgress >= 1) {
+                    if (currentPhase < phases.length - 1) {
+                        currentPhase++;
+                        phaseProgress = 0;
+                        document.getElementById('phaseText').textContent = 
+                            `${phases[currentPhase].name} (${phases[currentPhase].nameEn})`;
+                        document.getElementById('currentPhase').textContent = phases[currentPhase].name;
+                        updatePhaseCards();
+                    } else {
+                        isPlaying = false;
+                        document.getElementById('playBtn').textContent = '▶ 开始';
+                        document.getElementById('phaseText').textContent = '分裂完成';
+                    }
+                }
+                
+                updateUI();
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        function updatePhase() {
+            const t = phaseProgress;
+            
+            switch (currentPhase) {
+                case 0:
+                    nuclearMembrane.visible = true;
+                    nuclearMembrane.material.opacity = 0.3;
+                    break;
+                    
+                case 1:
+                    nuclearMembrane.material.opacity = 0.3 * (1 - t);
+                    chromosomes.forEach((c, i) => {
+                        c.scale.setScalar(1 + t * 0.5);
+                    });
+                    centrioles[0].position.x = -4 + t * 2;
+                    centrioles[1].position.x = 4 - t * 2;
+                    break;
+                    
+                case 2:
+                    if (spindles.length === 0) {
+                        chromosomes.forEach(c => {
+                            const spindle1 = createSpindle(centrioles[0].position, c.position);
+                            const spindle2 = createSpindle(centrioles[1].position, c.position);
+                        });
+                    }
+                    break;
+                    
+                case 3:
+                    chromosomes.forEach((c, i) => {
+                        c.position.y *= (1 - t * 0.5);
+                        const targetX = Math.cos(c.userData.angle) * 0.5;
+                        const targetZ = Math.sin(c.userData.angle) * 0.5;
+                        c.position.x += (targetX - c.position.x) * t * 0.1;
+                        c.position.z += (targetZ - c.position.z) * t * 0.1;
+                    });
+                    break;
+                    
+                case 4:
+                    chromosomes.forEach((c, i) => {
+                        if (!c.userData.separated && t > 0.3) {
+                            c.userData.separated = true;
+                        }
+                        if (c.userData.separated) {
+                            const dir = i % 2 === 0 ? -1 : 1;
+                            c.position.x += dir * 0.05 * speedMultiplier;
+                        }
+                    });
+                    break;
+                    
+                case 5:
+                    nuclearMembrane.visible = true;
+                    nuclearMembrane.material.opacity = t * 0.3;
+                    
+                    cell.scale.x = 1 + t * 0.3;
+                    
+                    spindles.forEach(s => {
+                        s.material.opacity = 0.6 * (1 - t);
+                    });
+                    break;
+            }
+        }
+        
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            
+            if (!isPlaying) {
+                isPlaying = true;
+                btn.textContent = '⏸ 暂停';
+            } else {
+                isPlaying = false;
+                btn.textContent = '▶ 继续';
+            }
+        }
+        
+        function stepSimulation() {
+            phaseProgress += 0.15;
+            
+            if (phaseProgress >= 1) {
+                if (currentPhase < phases.length - 1) {
+                    currentPhase++;
+                    phaseProgress = 0;
+                    document.getElementById('phaseText').textContent = 
+                        `${phases[currentPhase].name} (${phases[currentPhase].nameEn})`;
+                    document.getElementById('currentPhase').textContent = phases[currentPhase].name;
+                    updatePhaseCards();
+                }
+            }
+            
+            updatePhase();
+            updateUI();
+        }
+        
+        function resetSimulation() {
+            isPlaying = false;
+            currentPhase = 0;
+            phaseProgress = 0;
+            
+            document.getElementById('playBtn').textContent = '▶ 开始';
+            document.getElementById('phaseText').textContent = 
+                `${phases[0].name} (${phases[0].nameEn})`;
+            document.getElementById('currentPhase').textContent = phases[0].name;
+            
+            spindles.forEach(s => cell.remove(s));
+            spindles = [];
+            
+            scene.remove(cell);
+            createCell();
+            updatePhaseCards();
+            updateUI();
+        }
+        
+        function randomExperiment() {
+            chromosomePairs = [2, 4, 6, 8][Math.floor(Math.random() * 4)];
+            document.getElementById('chromosomeSlider').value = chromosomePairs;
+            document.getElementById('chromosomeValue').textContent = chromosomePairs;
+            
+            speedMultiplier = 0.5 + Math.random() * 2;
+            document.getElementById('speedSlider').value = speedMultiplier;
+            document.getElementById('speedValue').textContent = speedMultiplier.toFixed(1) + 'x';
+            
+            resetSimulation();
+            
+            setTimeout(() => togglePlay(), 500);
+        }
+        
+        function updateUI() {
+            const totalProgress = (currentPhase + phaseProgress) / phases.length * 100;
+            document.getElementById('progressValue').textContent = Math.floor(totalProgress) + '%';
+            
+            let chromosomeCount = chromosomePairs * 2;
+            let dnaCount = chromosomePairs * 4;
+            
+            if (currentPhase >= 4) {
+                chromosomeCount = chromosomePairs * 4;
+            }
+            
+            document.getElementById('chromosomeCount').textContent = chromosomeCount;
+            document.getElementById('dnaCount').textContent = dnaCount;
+        }
+        
+        function initPhaseCards() {
+            updatePhaseCards();
+        }
+        
+        function updatePhaseCards() {
+            for (let i = 0; i < phases.length; i++) {
+                const card = document.getElementById(`phase${i}`);
+                if (card) {
+                    if (i === currentPhase) {
+                        card.classList.add('active');
+                    } else {
+                        card.classList.remove('active');
+                    }
+                }
+            }
+        }
+        
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d').parentElement;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        function onMouseWheel(event) {
+            event.preventDefault();
+            const zoomSpeed = 0.001;
+            camera.position.multiplyScalar(1 + event.deltaY * zoomSpeed);
+            camera.position.clampLength(8, 30);
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function showAbout() {
+            document.getElementById('aboutModal').classList.add('show');
+        }
+        
+        function hideAbout() {
+            document.getElementById('aboutModal').classList.remove('show');
+        }
+        
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            speedMultiplier = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = speedMultiplier.toFixed(1) + 'x';
+        });
+        
+        document.getElementById('chromosomeSlider').addEventListener('input', (e) => {
+            chromosomePairs = parseInt(e.target.value);
+            document.getElementById('chromosomeValue').textContent = chromosomePairs;
+            resetSimulation();
+        });
+        
+        document.getElementById('aboutModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) hideAbout();
+        });
+        
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牛顿第二定律 - Newton's Second Law</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #14B8A6 0%, #06B6D4 50%, #22D3EE 100%);
+            --bg-gradient: linear-gradient(180deg, #0F172A 0%, #164E63 50%, #155E75 100%);
+            --theme-physics: linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --accent-cyan: #22D3EE;
+            --accent-emerald: #34D399;
+            --accent-amber: #FBBF24;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .nav-bar {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--theme-physics);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .nav-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: var(--accent-cyan);
+        }
+        
+        .main-container {
+            display: flex;
+            height: 100vh;
+            padding-top: 60px;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-320px);
+        }
+        
+        .sidebar-toggle {
+            position: fixed;
+            left: 320px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            width: 24px;
+            height: 48px;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            z-index: 101;
+            transition: left 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sidebar-toggle.collapsed {
+            left: 0;
+        }
+        
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--theme-physics);
+            border-radius: 2px;
+        }
+        
+        .learning-objectives {
+            margin-bottom: 1.5rem;
+        }
+        
+        .objective-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: var(--glass-bg);
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .objective-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .objective-checkbox.checked {
+            background: var(--accent-cyan);
+        }
+        
+        .objective-checkbox.checked::after {
+            content: '✓';
+            color: #0F172A;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .objective-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .formula-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .formula-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(14, 165, 233, 0.1) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            text-align: center;
+        }
+        
+        .formula-main {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .formula-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .principle-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .principle-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .application-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .app-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--glass-bg);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .app-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--theme-physics);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        .app-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .control-panel {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem 2rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            box-shadow: var(--glass-shadow);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .control-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .control-slider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .slider {
+            -webkit-appearance: none;
+            width: 120px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3B82F6 0%, #0EA5E9 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+        }
+        
+        .slider-value {
+            min-width: 60px;
+            font-size: 0.875rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            text-align: right;
+        }
+        
+        .result-box {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(52, 211, 153, 0.1) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            text-align: center;
+        }
+        
+        .result-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.25rem;
+        }
+        
+        .result-value {
+            font-size: 1.25rem;
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+        
+        .play-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--theme-physics);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
+        }
+        
+        .random-btn {
+            background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .random-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        
+        .info-overlay {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            max-width: 200px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-value {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--theme-physics);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-text {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-close {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+        
+        .force-arrow {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                z-index: 99;
+                height: calc(100vh - 60px);
+            }
+            
+            .control-panel {
+                flex-wrap: wrap;
+                width: 95%;
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .slider {
+                width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <div style="display: flex; align-items: baseline;">
+            <span class="nav-title">牛顿第二定律</span>
+            <span class="nav-subtitle">Newton's Second Law</span>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="resetSimulation()">重置</button>
+            <button class="nav-btn" onclick="randomExperiment()">随机实验</button>
+            <button class="nav-btn" onclick="toggleFullscreen()">全屏</button>
+            <button class="nav-btn" onclick="showAbout()">关于</button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="learning-objectives">
+                <h3 class="section-title">学习目标</h3>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">理解力、质量与加速度之间的关系</span>
+                </div>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">掌握公式 $F = ma$ 的物理意义</span>
+                </div>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">观察不同参数对运动的影响</span>
+                </div>
+                <div class="objective-item">
+                    <div class="objective-checkbox" onclick="this.classList.toggle('checked')"></div>
+                    <span class="objective-text">理解加速度的方向与力的方向一致</span>
+                </div>
+            </div>
+
+            <div class="formula-section">
+                <h3 class="section-title">核心公式</h3>
+                <div class="formula-box">
+                    <div class="formula-main" id="mainFormula">$F = ma$</div>
+                    <div class="formula-desc">力 = 质量 × 加速度</div>
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+                    <div style="margin-bottom: 0.5rem;">$F$ - 物体所受合外力 (N)</div>
+                    <div style="margin-bottom: 0.5rem;">$m$ - 物体质量 (kg)</div>
+                    <div>$a$ - 加速度 (m/s²)</div>
+                </div>
+            </div>
+
+            <div class="principle-section">
+                <h3 class="section-title">原理解释</h3>
+                <div class="principle-text">
+                    <p style="margin-bottom: 0.75rem;">想象你在推一辆购物车：</p>
+                    <p style="margin-bottom: 0.75rem;">🛒 <strong>推力越大</strong>，购物车加速越快——这就是力与加速度的正比关系。</p>
+                    <p style="margin-bottom: 0.75rem;">📦 <strong>购物车越重</strong>，同样的推力产生的加速越小——这就是质量与加速度的反比关系。</p>
+                    <p>牛顿第二定律揭示了：要改变物体的运动状态，必须施加外力。质量越大，"惯性"越大，越难改变。</p>
+                </div>
+            </div>
+
+            <div class="application-section">
+                <h3 class="section-title">为什么重要</h3>
+                <div class="app-item">
+                    <div class="app-icon">🚀</div>
+                    <span class="app-text">火箭发射：推力必须大于重力才能升空</span>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon">🚗</div>
+                    <span class="app-text">汽车加速：引擎功率决定加速能力</span>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon">⚽</div>
+                    <span class="app-text">体育运动：踢球力度决定球速</span>
+                </div>
+                <div class="app-item">
+                    <div class="app-icon">🛸</div>
+                    <span class="app-text">航天器轨道调整：精确计算推力</span>
+                </div>
+            </div>
+        </aside>
+
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">◀</button>
+
+        <main class="canvas-container">
+            <canvas id="canvas3d"></canvas>
+            
+            <div class="info-overlay">
+                <div class="info-item">
+                    <span>位移</span>
+                    <span class="info-value" id="displacement">0.00 m</span>
+                </div>
+                <div class="info-item">
+                    <span>速度</span>
+                    <span class="info-value" id="velocity">0.00 m/s</span>
+                </div>
+                <div class="info-item">
+                    <span>时间</span>
+                    <span class="info-value" id="time">0.00 s</span>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="control-group">
+                    <span class="control-label">质量 (kg)</span>
+                    <div class="control-slider">
+                        <input type="range" class="slider" id="massSlider" min="1" max="20" value="5" step="0.5">
+                        <span class="slider-value" id="massValue">5.0 kg</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">推力 (N)</span>
+                    <div class="control-slider">
+                        <input type="range" class="slider" id="forceSlider" min="1" max="50" value="10" step="1">
+                        <span class="slider-value" id="forceValue">10 N</span>
+                    </div>
+                </div>
+
+                <div class="result-box">
+                    <div class="result-label">加速度</div>
+                    <div class="result-value" id="acceleration">$2.00$ m/s²</div>
+                </div>
+
+                <div class="play-controls">
+                    <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                    <button class="play-btn" onclick="stepSimulation()" style="background: var(--glass-bg); border: 1px solid var(--glass-border);">⏭</button>
+                </div>
+
+                <button class="random-btn" onclick="randomExperiment()">🎲 随机实验</button>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="aboutModal">
+        <div class="modal-content">
+            <h2 class="modal-title">关于牛顿第二定律</h2>
+            <p class="modal-text">
+                牛顿第二定律是经典力学的核心定律之一，由艾萨克·牛顿在1687年发表。
+                <br><br>
+                它描述了力、质量和加速度三者之间的定量关系：物体所受合外力等于物体质量与其加速度的乘积。
+                <br><br>
+                这个定律是理解运动和力的基础，广泛应用于工程、航天、体育等各个领域。
+            </p>
+            <button class="modal-close" onclick="hideAbout()">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, box, ground, forceArrow, gridHelper;
+        let isPlaying = false;
+        let mass = 5, force = 10, acceleration = 2;
+        let velocity = 0, displacement = 0, time = 0;
+        let lastTime = 0;
+        
+        function init() {
+            const canvas = document.getElementById('canvas3d');
+            const container = canvas.parentElement;
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0F172A);
+            scene.fog = new THREE.Fog(0x0F172A, 20, 60);
+
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(8, 6, 12);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            const pointLight = new THREE.PointLight(0x22D3EE, 0.5, 30);
+            pointLight.position.set(-5, 5, 5);
+            scene.add(pointLight);
+
+            gridHelper = new THREE.GridHelper(40, 40, 0x164E63, 0x0D4F6F);
+            gridHelper.position.y = -0.01;
+            scene.add(gridHelper);
+
+            const groundGeometry = new THREE.PlaneGeometry(50, 50);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x155E75,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            createBox();
+            createForceArrow();
+            createRuler();
+
+            window.addEventListener('resize', onWindowResize);
+            
+            setupControls();
+            updateAcceleration();
+            
+            animate();
+        }
+
+        function createBox() {
+            if (box) scene.remove(box);
+            
+            const size = 0.8 + mass * 0.06;
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x3B82F6,
+                roughness: 0.3,
+                metalness: 0.7,
+                emissive: 0x1E40AF,
+                emissiveIntensity: 0.2
+            });
+            box = new THREE.Mesh(geometry, material);
+            box.position.set(-10 + displacement, size / 2, 0);
+            box.castShadow = true;
+            box.receiveShadow = true;
+            scene.add(box);
+
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x22D3EE }));
+            box.add(line);
+        }
+
+        function createForceArrow() {
+            forceArrow = new THREE.Group();
+            
+            const shaftGeometry = new THREE.CylinderGeometry(0.08, 0.08, 1, 8);
+            const shaftMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFBBF24,
+                emissive: 0xF59E0B,
+                emissiveIntensity: 0.3
+            });
+            const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
+            shaft.rotation.z = Math.PI / 2;
+            forceArrow.add(shaft);
+
+            const headGeometry = new THREE.ConeGeometry(0.2, 0.4, 8);
+            const headMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFBBF24,
+                emissive: 0xF59E0B,
+                emissiveIntensity: 0.3
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.rotation.z = -Math.PI / 2;
+            head.position.x = 0.7;
+            forceArrow.add(head);
+
+            scene.add(forceArrow);
+            updateForceArrow();
+        }
+
+        function updateForceArrow() {
+            if (!box || !forceArrow) return;
+            const size = 0.8 + mass * 0.06;
+            const arrowLength = force / 10;
+            forceArrow.scale.x = arrowLength;
+            forceArrow.position.set(
+                box.position.x - size / 2 - arrowLength / 2 - 0.2,
+                size / 2,
+                0
+            );
+            forceArrow.visible = force > 0;
+        }
+
+        function createRuler() {
+            const rulerGroup = new THREE.Group();
+            
+            for (let i = -20; i <= 20; i++) {
+                const tickGeometry = new THREE.BoxGeometry(0.05, 0.02, i % 5 === 0 ? 0.5 : 0.25);
+                const tickMaterial = new THREE.MeshBasicMaterial({ 
+                    color: i % 5 === 0 ? 0x22D3EE : 0x164E63 
+                });
+                const tick = new THREE.Mesh(tickGeometry, tickMaterial);
+                tick.position.set(i, 0.01, 1);
+                rulerGroup.add(tick);
+            }
+            
+            scene.add(rulerGroup);
+        }
+
+        function setupControls() {
+            const massSlider = document.getElementById('massSlider');
+            const forceSlider = document.getElementById('forceSlider');
+            
+            massSlider.addEventListener('input', (e) => {
+                mass = parseFloat(e.target.value);
+                document.getElementById('massValue').textContent = mass.toFixed(1) + ' kg';
+                updateAcceleration();
+                createBox();
+                updateForceArrow();
+            });
+            
+            forceSlider.addEventListener('input', (e) => {
+                force = parseFloat(e.target.value);
+                document.getElementById('forceValue').textContent = force + ' N';
+                updateAcceleration();
+                updateForceArrow();
+            });
+        }
+
+        function updateAcceleration() {
+            acceleration = force / mass;
+            document.getElementById('acceleration').innerHTML = 
+                '$' + acceleration.toFixed(2) + '$ m/s²';
+            renderMathInElement(document.getElementById('acceleration'));
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('playBtn').innerHTML = isPlaying ? '⏸' : '▶';
+            
+            if (isPlaying && displacement >= 18) {
+                resetSimulation();
+            }
+        }
+
+        function stepSimulation() {
+            const dt = 0.05;
+            velocity += acceleration * dt;
+            displacement += velocity * dt;
+            time += dt;
+            
+            updateBoxPosition();
+            updateInfo();
+        }
+
+        function resetSimulation() {
+            isPlaying = false;
+            document.getElementById('playBtn').innerHTML = '▶';
+            velocity = 0;
+            displacement = 0;
+            time = 0;
+            
+            updateBoxPosition();
+            updateInfo();
+        }
+
+        function updateBoxPosition() {
+            if (box) {
+                const size = 0.8 + mass * 0.06;
+                box.position.x = -10 + displacement;
+            }
+            updateForceArrow();
+        }
+
+        function updateInfo() {
+            document.getElementById('displacement').textContent = displacement.toFixed(2) + ' m';
+            document.getElementById('velocity').textContent = velocity.toFixed(2) + ' m/s';
+            document.getElementById('time').textContent = time.toFixed(2) + ' s';
+        }
+
+        function randomExperiment() {
+            mass = Math.round((Math.random() * 15 + 2) * 2) / 2;
+            force = Math.round(Math.random() * 40 + 5);
+            
+            document.getElementById('massSlider').value = mass;
+            document.getElementById('forceSlider').value = force;
+            document.getElementById('massValue').textContent = mass.toFixed(1) + ' kg';
+            document.getElementById('forceValue').textContent = force + ' N';
+            
+            resetSimulation();
+            updateAcceleration();
+            createBox();
+            updateForceArrow();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            sidebar.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
+            toggle.innerHTML = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function showAbout() {
+            document.getElementById('aboutModal').classList.add('active');
+        }
+
+        function hideAbout() {
+            document.getElementById('aboutModal').classList.remove('active');
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d').parentElement;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+            
+            if (isPlaying) {
+                const dt = Math.min((currentTime - lastTime) / 1000, 0.1) || 0.016;
+                
+                if (displacement < 18) {
+                    velocity += acceleration * dt;
+                    displacement += velocity * dt;
+                    time += dt;
+                    
+                    updateBoxPosition();
+                    updateInfo();
+                } else {
+                    isPlaying = false;
+                    document.getElementById('playBtn').innerHTML = '▶';
+                }
+            }
+            
+            if (box) {
+                box.rotation.y += 0.002;
+            }
+            
+            lastTime = currentTime;
+            
+            camera.position.x = 8 + Math.sin(Date.now() * 0.0002) * 2;
+            camera.lookAt(box ? box.position.x : 0, 0, 0);
+            
+            renderer.render(scene, camera);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ]
+            });
+        });
+
+        document.getElementById('aboutModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) hideAbout();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>细胞呼吸 | Cellular Respiration</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #10B981 0%, #22D3EE 100%);
+            --bg-gradient: linear-gradient(180deg, #0F172A 0%, #064E3B 50%, #155E75 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #94A3B8;
+            --accent-green: #34D399;
+            --accent-cyan: #22D3EE;
+            --accent-orange: #FB923C;
+            --accent-red: #F87171;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .nav {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(52, 211, 153, 0.2);
+            border-color: var(--accent-green);
+        }
+        
+        .main-container {
+            display: flex;
+            margin-top: 4rem;
+            min-height: calc(100vh - 4rem);
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 4rem);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .sidebar-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-green);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .learning-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .learning-item input[type="checkbox"] {
+            margin-top: 0.25rem;
+            accent-color: var(--accent-green);
+        }
+        
+        .formula-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .formula-box .katex {
+            font-size: 1rem;
+        }
+        
+        .concept-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        
+        .highlight {
+            color: var(--accent-green);
+            font-weight: 500;
+        }
+        
+        .stage-indicator {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stage-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stage-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(52, 211, 153, 0.1) 0%, transparent 70%);
+        }
+        
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .control-panel {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            max-width: 90%;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .control-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .control-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(52, 211, 153, 0.5);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .control-btn:hover {
+            background: rgba(52, 211, 153, 0.2);
+            border-color: var(--accent-green);
+        }
+        
+        .control-btn.active {
+            background: var(--accent-green);
+            color: #000;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-width: 200px;
+        }
+        
+        .info-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .info-label {
+            color: var(--text-secondary);
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+        
+        .info-value.atp {
+            color: var(--accent-orange);
+        }
+        
+        .info-value.co2 {
+            color: var(--accent-red);
+        }
+        
+        .info-value.h2o {
+            color: var(--accent-cyan);
+        }
+        
+        .phase-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .phase-text {
+            font-size: 0.875rem;
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 8rem;
+            right: 1rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .legend-color.glucose { background: #34D399; }
+        .legend-color.pyruvate { background: #FBBF24; }
+        .legend-color.acetyl { background: #FB923C; }
+        .legend-color.atp { background: #F87171; }
+        .legend-color.nadh { background: #60A5FA; }
+        .legend-color.co2 { background: #94A3B8; }
+        .legend-color.h2o { background: #22D3EE; }
+        
+        .about-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        .about-modal.show {
+            display: flex;
+        }
+        
+        .about-content {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .about-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .about-content p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .control-panel {
+                flex-direction: column;
+                width: 95%;
+                gap: 1rem;
+            }
+            
+            .info-panel {
+                top: auto;
+                bottom: 12rem;
+                right: 0.5rem;
+                left: 0.5rem;
+                min-width: auto;
+            }
+            
+            .legend {
+                bottom: 18rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-title">🧬 细胞呼吸 | Cellular Respiration</div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="resetSimulation()">重置</button>
+            <button class="nav-btn" onclick="randomExperiment()">随机实验</button>
+            <button class="nav-btn" onclick="toggleFullscreen()">全屏</button>
+            <button class="nav-btn" onclick="showAbout()">关于</button>
+        </div>
+    </nav>
+    
+    <div class="main-container">
+        <aside class="sidebar">
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">🎯 学习目标</h3>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>理解细胞呼吸的三个阶段</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>掌握糖酵解、柠檬酸循环、电子传递链</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>理解ATP的产生机制</span>
+                </label>
+                <label class="learning-item">
+                    <input type="checkbox">
+                    <span>认识有氧呼吸与无氧呼吸的区别</span>
+                </label>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">📊 三个阶段</h3>
+                <div class="stage-indicator">
+                    <div class="stage-name">1. 糖酵解 (Glycolysis)</div>
+                    <div class="stage-desc">葡萄糖 → 2丙酮酸 + 2ATP + 2NADH（细胞质）</div>
+                </div>
+                <div class="stage-indicator">
+                    <div class="stage-name">2. 柠檬酸循环 (Krebs Cycle)</div>
+                    <div class="stage-desc">丙酮酸 → CO₂ + ATP + NADH + FADH₂（线粒体基质）</div>
+                </div>
+                <div class="stage-indicator">
+                    <div class="stage-name">3. 电子传递链 (ETC)</div>
+                    <div class="stage-desc">NADH/FADH₂ → ATP + H₂O（线粒体内膜）</div>
+                </div>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">📐 总反应式</h3>
+                <div class="formula-box" id="formula1"></div>
+                <div class="formula-box" id="formula2"></div>
+            </section>
+            
+            <section class="sidebar-section">
+                <h3 class="sidebar-title">💡 核心概念</h3>
+                <p class="concept-text">
+                    <span class="highlight">细胞呼吸</span>是将葡萄糖中的能量逐步释放并转移到ATP中的过程。
+                </p>
+                <p class="concept-text">
+                    <span class="highlight">有氧呼吸</span>：需要氧气，产生约36-38个ATP
+                </p>
+                <p class="concept-text">
+                    <span class="highlight">无氧呼吸</span>：不需要氧气，产生2个ATP
+                </p>
+            </section>
+        </aside>
+        
+        <div class="canvas-container">
+            <canvas id="canvas3d"></canvas>
+            
+            <div class="phase-indicator">
+                <span class="phase-text" id="phaseText">阶段1: 糖酵解</span>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-title">反应产物</div>
+                <div class="info-row">
+                    <span class="info-label">ATP产量:</span>
+                    <span class="info-value atp" id="atpCount">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">CO₂释放:</span>
+                    <span class="info-value co2" id="co2Count">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">H₂O生成:</span>
+                    <span class="info-value h2o" id="h2oCount">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">反应进度:</span>
+                    <span class="info-value" id="progressValue">0%</span>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color glucose"></div>
+                    <span>葡萄糖 (C₆H₁₂O₆)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color pyruvate"></div>
+                    <span>丙酮酸</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color acetyl"></div>
+                    <span>乙酰辅酶A</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color atp"></div>
+                    <span>ATP</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color nadh"></div>
+                    <span>NADH</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color co2"></div>
+                    <span>CO₂</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color h2o"></div>
+                    <span>H₂O</span>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <span class="control-label">呼吸类型</span>
+                    <select class="control-btn" id="respirationType" onchange="changeRespirationType()">
+                        <option value="aerobic">有氧呼吸</option>
+                        <option value="anaerobic">无氧呼吸</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">反应速度</span>
+                    <div class="slider-container">
+                        <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+                        <span class="control-value" id="speedValue">1.0x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">葡萄糖量</span>
+                    <div class="slider-container">
+                        <input type="range" id="glucoseSlider" min="1" max="5" step="1" value="1">
+                        <span class="control-value" id="glucoseValue">1</span>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="control-btn" id="playBtn" onclick="togglePlay()">▶ 开始</button>
+                    <button class="control-btn" onclick="stepSimulation()">单步</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="about-modal" id="aboutModal" onclick="hideAbout()">
+        <div class="about-content" onclick="event.stopPropagation()">
+            <h3>🧬 细胞呼吸</h3>
+            <p>
+                细胞呼吸是生物体将有机物（主要是葡萄糖）氧化分解，释放能量并产生ATP的过程。
+                这是所有需氧生物获取能量的主要方式。
+            </p>
+            <p>
+                通过这个3D交互式模拟，你可以观察葡萄糖如何通过三个阶段逐步分解，
+                最终产生ATP、CO₂和H₂O的过程！
+            </p>
+            <button class="control-btn" onclick="hideAbout()">关闭</button>
+        </div>
+    </div>
+    
+    <script>
+        let scene, camera, renderer;
+        let glucose, mitochondrion;
+        let particles = [];
+        let products = { atp: 0, co2: 0, h2o: 0 };
+        let isPlaying = false;
+        let currentPhase = 1;
+        let phaseProgress = 0;
+        let totalProgress = 0;
+        let animationId;
+        
+        let isAerobic = true;
+        let speedMultiplier = 1;
+        let glucoseCount = 1;
+        
+        const colors = {
+            glucose: 0x34D399,
+            pyruvate: 0xFBBF24,
+            acetyl: 0xFB923C,
+            atp: 0xF87171,
+            nadh: 0x60A5FA,
+            co2: 0x94A3B8,
+            h2o: 0x22D3EE,
+            lactate: 0xA78BFA
+        };
+        
+        function init() {
+            const canvas = document.getElementById('canvas3d');
+            const container = canvas.parentElement;
+            
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 5, 15);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight1 = new THREE.PointLight(0x34D399, 1, 50);
+            pointLight1.position.set(5, 5, 5);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x22D3EE, 0.8, 50);
+            pointLight2.position.set(-5, 3, -5);
+            scene.add(pointLight2);
+            
+            createMitochondrion();
+            createGlucose();
+            initFormulas();
+            
+            window.addEventListener('resize', onWindowResize);
+            canvas.addEventListener('wheel', onMouseWheel);
+            
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                const rotationSpeed = 0.005;
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * rotationSpeed;
+                spherical.phi += deltaY * rotationSpeed;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mouseup', () => isDragging = false);
+            canvas.addEventListener('mouseleave', () => isDragging = false);
+            
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+                
+                const rotationSpeed = 0.005;
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.theta -= deltaX * rotationSpeed;
+                spherical.phi += deltaY * rotationSpeed;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+            
+            canvas.addEventListener('touchend', () => isDragging = false);
+            
+            animate();
+        }
+        
+        function createMitochondrion() {
+            mitochondrion = new THREE.Group();
+            
+            const outerMembraneGeo = new THREE.CapsuleGeometry(3, 6, 16, 32);
+            const outerMembraneMat = new THREE.MeshStandardMaterial({
+                color: 0x10B981,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.5,
+                side: THREE.DoubleSide
+            });
+            const outerMembrane = new THREE.Mesh(outerMembraneGeo, outerMembraneMat);
+            outerMembrane.rotation.z = Math.PI / 2;
+            mitochondrion.add(outerMembrane);
+            
+            const innerMembraneMat = new THREE.MeshStandardMaterial({
+                color: 0x22D3EE,
+                transparent: true,
+                opacity: 0.4,
+                roughness: 0.5,
+                side: THREE.DoubleSide
+            });
+            
+            for (let i = -2; i <= 2; i++) {
+                const cristaeGeo = new THREE.TorusGeometry(1.5, 0.15, 8, 32);
+                const cristae = new THREE.Mesh(cristaeGeo, innerMembraneMat);
+                cristae.position.x = i * 1.2;
+                cristae.rotation.y = Math.PI / 2;
+                mitochondrion.add(cristae);
+            }
+            
+            scene.add(mitochondrion);
+        }
+        
+        function createGlucose() {
+            if (glucose) scene.remove(glucose);
+            
+            glucose = new THREE.Group();
+            
+            const ringGeo = new THREE.TorusGeometry(0.8, 0.3, 8, 6);
+            const glucoseMat = new THREE.MeshStandardMaterial({
+                color: colors.glucose,
+                emissive: colors.glucose,
+                emissiveIntensity: 0.3,
+                roughness: 0.3
+            });
+            
+            const ring1 = new THREE.Mesh(ringGeo, glucoseMat);
+            ring1.position.set(-5, 2, 0);
+            glucose.add(ring1);
+            
+            for (let i = 0; i < 6; i++) {
+                const atomGeo = new THREE.SphereGeometry(0.2, 16, 16);
+                const atom = new THREE.Mesh(atomGeo, glucoseMat);
+                const angle = (i / 6) * Math.PI * 2;
+                atom.position.set(
+                    -5 + Math.cos(angle) * 0.8,
+                    2 + Math.sin(angle) * 0.8,
+                    0
+                );
+                glucose.add(atom);
+            }
+            
+            scene.add(glucose);
+        }
+        
+        function createParticle(type, position) {
+            const geo = new THREE.SphereGeometry(0.25, 16, 16);
+            const mat = new THREE.MeshStandardMaterial({
+                color: colors[type],
+                emissive: colors[type],
+                emissiveIntensity: 0.5,
+                roughness: 0.3
+            });
+            const particle = new THREE.Mesh(geo, mat);
+            particle.position.copy(position);
+            particle.userData = { type, velocity: new THREE.Vector3() };
+            scene.add(particle);
+            particles.push(particle);
+            return particle;
+        }
+        
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            const time = Date.now() * 0.001;
+            
+            if (mitochondrion) {
+                mitochondrion.rotation.y += 0.003;
+            }
+            
+            if (glucose) {
+                glucose.rotation.y += 0.01;
+                glucose.children.forEach((child, i) => {
+                    child.position.y += Math.sin(time * 2 + i) * 0.002;
+                });
+            }
+            
+            particles.forEach(particle => {
+                particle.rotation.x += 0.05;
+                particle.rotation.y += 0.05;
+            });
+            
+            if (isPlaying) {
+                phaseProgress += 0.005 * speedMultiplier;
+                totalProgress += 0.0017 * speedMultiplier;
+                
+                if (currentPhase === 1 && phaseProgress >= 0.33) {
+                    currentPhase = 2;
+                    document.getElementById('phaseText').textContent = isAerobic ? 
+                        '阶段2: 柠檬酸循环' : '无氧路径: 乳酸发酵';
+                    
+                    for (let i = 0; i < 2; i++) {
+                        createParticle('pyruvate', new THREE.Vector3(-2 + i, 0, 0));
+                    }
+                    products.atp += 2;
+                    
+                    if (!isAerobic) {
+                        for (let i = 0; i < 2; i++) {
+                            setTimeout(() => {
+                                createParticle('lactate', new THREE.Vector3(Math.random() * 4 - 2, 0, 0));
+                            }, i * 500);
+                        }
+                    }
+                }
+                
+                if (currentPhase === 2 && phaseProgress >= 0.66 && isAerobic) {
+                    currentPhase = 3;
+                    document.getElementById('phaseText').textContent = '阶段3: 电子传递链';
+                    
+                    for (let i = 0; i < 6; i++) {
+                        setTimeout(() => {
+                            createParticle('co2', new THREE.Vector3(Math.random() * 4 - 2, 2, 0));
+                        }, i * 200);
+                    }
+                    
+                    for (let i = 0; i < 10; i++) {
+                        setTimeout(() => {
+                            createParticle('nadh', new THREE.Vector3(
+                                Math.cos(i * 0.6) * 2,
+                                Math.sin(i * 0.6) * 2,
+                                0
+                            ));
+                        }, i * 100);
+                    }
+                }
+                
+                if (phaseProgress >= 1) {
+                    phaseProgress = 1;
+                    isPlaying = false;
+                    document.getElementById('playBtn').textContent = '▶ 开始';
+                    document.getElementById('phaseText').textContent = '反应完成';
+                    
+                    if (isAerobic) {
+                        products.atp += 34;
+                        products.co2 += 6;
+                        products.h2o += 6;
+                        
+                        for (let i = 0; i < 6; i++) {
+                            setTimeout(() => {
+                                createParticle('h2o', new THREE.Vector3(Math.random() * 4 - 2, -2, 0));
+                            }, i * 200);
+                        }
+                    }
+                }
+                
+                updateUI();
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        function togglePlay() {
+            const btn = document.getElementById('playBtn');
+            
+            if (!isPlaying) {
+                isPlaying = true;
+                btn.textContent = '⏸ 暂停';
+            } else {
+                isPlaying = false;
+                btn.textContent = '▶ 继续';
+            }
+        }
+        
+        function stepSimulation() {
+            phaseProgress += 0.1;
+            totalProgress += 0.033;
+            
+            if (currentPhase === 1 && phaseProgress >= 0.33) {
+                currentPhase = 2;
+                document.getElementById('phaseText').textContent = isAerobic ? 
+                    '阶段2: 柠檬酸循环' : '无氧路径: 乳酸发酵';
+                products.atp += 2;
+            }
+            
+            if (currentPhase === 2 && phaseProgress >= 0.66 && isAerobic) {
+                currentPhase = 3;
+                document.getElementById('phaseText').textContent = '阶段3: 电子传递链';
+            }
+            
+            if (phaseProgress >= 1) {
+                phaseProgress = 1;
+                document.getElementById('phaseText').textContent = '反应完成';
+                if (isAerobic) {
+                    products.atp += 34;
+                    products.co2 += 6;
+                    products.h2o += 6;
+                }
+            }
+            
+            updateUI();
+        }
+        
+        function resetSimulation() {
+            isPlaying = false;
+            currentPhase = 1;
+            phaseProgress = 0;
+            totalProgress = 0;
+            products = { atp: 0, co2: 0, h2o: 0 };
+            
+            particles.forEach(p => scene.remove(p));
+            particles = [];
+            
+            document.getElementById('playBtn').textContent = '▶ 开始';
+            document.getElementById('phaseText').textContent = '阶段1: 糖酵解';
+            
+            createGlucose();
+            updateUI();
+        }
+        
+        function randomExperiment() {
+            isAerobic = Math.random() > 0.5;
+            document.getElementById('respirationType').value = isAerobic ? 'aerobic' : 'anaerobic';
+            
+            glucoseCount = Math.floor(Math.random() * 5) + 1;
+            document.getElementById('glucoseSlider').value = glucoseCount;
+            document.getElementById('glucoseValue').textContent = glucoseCount;
+            
+            resetSimulation();
+            
+            setTimeout(() => togglePlay(), 500);
+        }
+        
+        function changeRespirationType() {
+            isAerobic = document.getElementById('respirationType').value === 'aerobic';
+            resetSimulation();
+        }
+        
+        function updateUI() {
+            document.getElementById('atpCount').textContent = products.atp * glucoseCount;
+            document.getElementById('co2Count').textContent = products.co2 * glucoseCount;
+            document.getElementById('h2oCount').textContent = products.h2o * glucoseCount;
+            document.getElementById('progressValue').textContent = Math.floor(totalProgress * 100) + '%';
+        }
+        
+        function initFormulas() {
+            katex.render(String.raw`\text{有氧: } C_6H_{12}O_6 + 6O_2 \rightarrow 6CO_2 + 6H_2O + 36ATP`, 
+                document.getElementById('formula1'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            
+            katex.render(String.raw`\text{无氧: } C_6H_{12}O_6 \rightarrow 2C_3H_6O_3 + 2ATP`, 
+                document.getElementById('formula2'), {
+                displayMode: true,
+                throwOnError: false
+            });
+        }
+        
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d').parentElement;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        function onMouseWheel(event) {
+            event.preventDefault();
+            const zoomSpeed = 0.001;
+            camera.position.multiplyScalar(1 + event.deltaY * zoomSpeed);
+            camera.position.clampLength(8, 30);
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function showAbout() {
+            document.getElementById('aboutModal').classList.add('show');
+        }
+        
+        function hideAbout() {
+            document.getElementById('aboutModal').classList.remove('show');
+        }
+        
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            speedMultiplier = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = speedMultiplier.toFixed(1) + 'x';
+        });
+        
+        document.getElementById('glucoseSlider').addEventListener('input', (e) => {
+            glucoseCount = parseInt(e.target.value);
+            document.getElementById('glucoseValue').textContent = glucoseCount;
+        });
+        
+        document.getElementById('aboutModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) hideAbout();
+        });
+        
+        init();
+    </script>
+</body>
+</html>

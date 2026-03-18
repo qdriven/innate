@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光合作用 | Photosynthesis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(180deg, #052e16 0%, #14532d 50%, #166534 100%);
+            --primary-gradient: linear-gradient(135deg, #22C55E 0%, #10B981 50%, #34D399 100%);
+            --accent-green: #22C55E;
+            --accent-emerald: #10B981;
+            --accent-lime: #84CC16;
+            --accent-yellow: #FACC15;
+            --accent-cyan: #22D3EE;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-gradient);
+            color: #F8FAFC;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+        .nav-bg {
+            background: rgba(5, 46, 22, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        #canvas-container {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 64px);
+            z-index: 0;
+        }
+        .sidebar {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 340px;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            z-index: 10;
+            transition: transform 0.3s ease;
+        }
+        .sidebar.collapsed { transform: translateX(-300px); }
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 360px;
+            z-index: 10;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(34, 197, 94, 0.3);
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22C55E, #10B981);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4); }
+        .btn-glass {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: #F8FAFC;
+        }
+        .btn-glass:hover { background: rgba(255, 255, 255, 0.15); }
+        .phase-indicator {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .phase-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+        .phase-dot.active {
+            background: #22C55E;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+        .molecule-counter {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .counter-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 280px; }
+            .sidebar.collapsed { transform: translateX(-240px); }
+            .control-panel { width: calc(100% - 40px); left: 20px; right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bg fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-6 z-20">
+        <div class="flex items-center gap-4">
+            <button id="toggleSidebar" class="btn btn-glass p-2">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                </svg>
+            </button>
+            <div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                    光合作用
+                </h1>
+                <p class="text-xs text-slate-400">Photosynthesis</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="resetBtn" class="btn btn-glass text-sm">重置</button>
+            <button id="randomBtn" class="btn btn-primary text-sm">随机实验</button>
+            <button id="fullscreenBtn" class="btn btn-glass p-2">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <div id="canvas-container"></div>
+
+    <aside id="sidebar" class="sidebar glass m-4 p-5">
+        <div class="space-y-6">
+            <section>
+                <h2 class="text-lg font-semibold text-green-300 mb-3 flex items-center gap-2">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="10" cy="10" r="8"/><path d="M10 6v4l2 2"/>
+                    </svg>
+                    学习目标
+                </h2>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-green-500" id="obj1">
+                        <label for="obj1">理解光合作用的完整化学反应过程</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-green-500" id="obj2">
+                        <label for="obj2">掌握光反应与暗反应的区别和联系</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-green-500" id="obj3">
+                        <label for="obj3">了解叶绿体结构和各组分功能</label>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <input type="checkbox" class="mt-1 accent-green-500" id="obj4">
+                        <label for="obj4">认识光合作用对地球生态的重要意义</label>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-green-300 mb-3">核心公式</h2>
+                <div class="space-y-3 text-sm">
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">总反应方程式</p>
+                        <div id="formula1" class="text-center"></div>
+                    </div>
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">光反应</p>
+                        <div id="formula2" class="text-center"></div>
+                    </div>
+                    <div class="glass p-3 rounded-lg">
+                        <p class="text-slate-400 mb-1">卡尔文循环</p>
+                        <div id="formula3" class="text-center"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-green-300 mb-3">过程解析</h2>
+                <div class="text-sm text-slate-300 space-y-3">
+                    <p>
+                        <span class="text-yellow-400 font-medium">光反应（类囊体膜）：</span>
+                        水分子被光能分解，释放氧气，产生ATP和NADPH。光能转化为活跃的化学能。
+                    </p>
+                    <p>
+                        <span class="text-cyan-400 font-medium">暗反应（叶绿体基质）：</span>
+                        CO₂被固定并还原为葡萄糖，消耗ATP和NADPH。活跃化学能转化为稳定化学能。
+                    </p>
+                    <p>
+                        <span class="text-lime-400 font-medium">电子传递链：</span>
+                        光系统II→细胞色素b6f→光系统I→NADP+还原酶，形成质子梯度驱动ATP合成。
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-green-300 mb-3">为什么重要？</h2>
+                <ul class="text-sm text-slate-300 space-y-2">
+                    <li class="flex items-start gap-2">
+                        <span class="text-yellow-400">▸</span>
+                        <span><strong>氧气来源</strong>：地球90%的氧气由海洋藻类光合作用产生</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-cyan-400">▸</span>
+                        <span><strong>食物链基础</strong>：将太阳能转化为所有生物可利用的化学能</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-lime-400">▸</span>
+                        <span><strong>碳循环</strong>：每年固定约1200亿吨碳，调节大气CO₂</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-400">▸</span>
+                        <span><strong>可再生能源</strong>：人工光合作用是清洁能源前沿研究方向</span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </aside>
+
+    <div class="control-panel glass p-5">
+        <h3 class="text-lg font-semibold text-green-300 mb-4">实验控制面板</h3>
+        
+        <div class="phase-indicator">
+            <div class="phase-dot active" id="phase1"></div>
+            <div class="phase-dot" id="phase2"></div>
+            <div class="phase-dot" id="phase3"></div>
+            <span class="text-sm text-slate-400 ml-2" id="phaseText">光反应：水光解</span>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">光照强度</span>
+                    <span id="lightIntensityValue" class="text-yellow-300 font-mono">100%</span>
+                </div>
+                <input type="range" id="lightIntensitySlider" min="0" max="100" step="5" value="100">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">CO₂浓度</span>
+                    <span id="co2Value" class="text-cyan-300 font-mono">400 ppm</span>
+                </div>
+                <input type="range" id="co2Slider" min="100" max="1000" step="50" value="400">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">温度</span>
+                    <span id="tempValue" class="text-orange-300 font-mono">25°C</span>
+                </div>
+                <input type="range" id="tempSlider" min="5" max="45" step="1" value="25">
+            </div>
+
+            <div class="pt-2 border-t border-white/10">
+                <p class="text-sm text-slate-400 mb-2">分子计数</p>
+                <div class="molecule-counter text-xs">
+                    <div class="counter-item">
+                        <span class="text-blue-400">H₂O</span>
+                        <span id="waterCount" class="font-mono">6</span>
+                    </div>
+                    <div class="counter-item">
+                        <span class="text-cyan-400">CO₂</span>
+                        <span id="co2Count" class="font-mono">6</span>
+                    </div>
+                    <div class="counter-item">
+                        <span class="text-green-400">O₂</span>
+                        <span id="o2Count" class="font-mono">0</span>
+                    </div>
+                    <div class="counter-item">
+                        <span class="text-lime-400">C₆H₁₂O₆</span>
+                        <span id="glucoseCount" class="font-mono">0</span>
+                    </div>
+                    <div class="counter-item">
+                        <span class="text-yellow-400">ATP</span>
+                        <span id="atpCount" class="font-mono">0</span>
+                    </div>
+                    <div class="counter-item">
+                        <span class="text-purple-400">NADPH</span>
+                        <span id="nadphCount" class="font-mono">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-white/10">
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-400">光合作用速率</span>
+                    <span id="rateValue" class="text-green-300 font-mono">0.00 μmol/m²/s</span>
+                </div>
+                <div class="h-2 bg-black/30 rounded-full overflow-hidden">
+                    <div id="rateBar" class="h-full bg-gradient-to-r from-green-500 to-lime-400 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button id="playBtn" class="btn btn-primary flex-1 flex items-center justify-center gap-2">
+                    <svg id="playIcon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span id="playText">开始</span>
+                </button>
+                <button id="stepBtn" class="btn btn-glass">单步</button>
+            </div>
+
+            <div class="flex items-center gap-3 text-sm">
+                <span class="text-slate-400">速度</span>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1" class="flex-1">
+                <span id="speedValue" class="text-slate-300 font-mono">1.0x</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lightIntensity = 100;
+        let co2Concentration = 400;
+        let temperature = 25;
+        let isPlaying = false;
+        let speed = 1.0;
+        let currentPhase = 1;
+        let molecules = { water: 6, co2: 6, o2: 0, glucose: 0, atp: 0, nadph: 0 };
+        let animationId = null;
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / (window.innerHeight - 64), 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight - 64);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        camera.position.set(0, 10, 20);
+        camera.lookAt(0, 0, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xFFD700, 1.2);
+        sunLight.position.set(10, 15, 5);
+        scene.add(sunLight);
+
+        const pointLight = new THREE.PointLight(0x22C55E, 0.6, 50);
+        pointLight.position.set(0, 5, 0);
+        scene.add(pointLight);
+
+        let chloroplastGroup = new THREE.Group();
+        scene.add(chloroplastGroup);
+
+        let particleSystems = [];
+
+        function createChloroplast() {
+            while(chloroplastGroup.children.length > 0) {
+                chloroplastGroup.remove(chloroplastGroup.children[0]);
+            }
+            particleSystems = [];
+
+            const outerGeometry = new THREE.SphereGeometry(6, 32, 32);
+            outerGeometry.scale(1.6, 0.5, 1);
+            const outerMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x166534,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.2,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            });
+            const outer = new THREE.Mesh(outerGeometry, outerMaterial);
+            chloroplastGroup.add(outer);
+
+            for (let i = 0; i < 6; i++) {
+                const thylakoidGeometry = new THREE.CylinderGeometry(0.4, 0.4, 5, 16);
+                const thylakoidMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0x22C55E,
+                    emissive: 0x052e16,
+                    emissiveIntensity: 0.3,
+                    roughness: 0.4,
+                    metalness: 0.2
+                });
+                const thylakoid = new THREE.Mesh(thylakoidGeometry, thylakoidMaterial);
+                thylakoid.rotation.z = Math.PI / 2;
+                thylakoid.position.set(-3 + i * 1.2, 0, 0);
+                chloroplastGroup.add(thylakoid);
+            }
+
+            const h2oParticles = createParticleSystem(0x3B82F6, 30, -8, 3, -3);
+            particleSystems.push({ system: h2oParticles, type: 'water', baseX: -8 });
+            chloroplastGroup.add(h2oParticles);
+
+            const co2Particles = createParticleSystem(0x22D3EE, 30, -8, 3, 3);
+            particleSystems.push({ system: co2Particles, type: 'co2', baseX: -8 });
+            chloroplastGroup.add(co2Particles);
+
+            const o2Particles = createParticleSystem(0x22C55E, 20, 8, 3, -3);
+            particleSystems.push({ system: o2Particles, type: 'o2', baseX: 8, visible: false });
+            o2Particles.visible = false;
+            chloroplastGroup.add(o2Particles);
+
+            const glucoseParticles = createParticleSystem(0x84CC16, 20, 8, 3, 3);
+            particleSystems.push({ system: glucoseParticles, type: 'glucose', baseX: 8, visible: false });
+            glucoseParticles.visible = false;
+            chloroplastGroup.add(glucoseParticles);
+
+            const atpParticles = createParticleSystem(0xFACC15, 15, 0, 4, 0);
+            particleSystems.push({ system: atpParticles, type: 'atp', baseX: 0, visible: false });
+            atpParticles.visible = false;
+            chloroplastGroup.add(atpParticles);
+        }
+
+        function createParticleSystem(color, count, baseX, baseY, baseZ) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            
+            const colorObj = new THREE.Color(color);
+            
+            for (let i = 0; i < count; i++) {
+                positions[i * 3] = baseX + (Math.random() - 0.5) * 2;
+                positions[i * 3 + 1] = baseY + (Math.random() - 0.5) * 2;
+                positions[i * 3 + 2] = baseZ + (Math.random() - 0.5) * 2;
+                
+                colors[i * 3] = colorObj.r;
+                colors[i * 3 + 1] = colorObj.g;
+                colors[i * 3 + 2] = colorObj.b;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            return new THREE.Points(geometry, material);
+        }
+
+        function createSunRays() {
+            const rayGroup = new THREE.Group();
+            
+            for (let i = 0; i < 8; i++) {
+                const rayGeometry = new THREE.CylinderGeometry(0.05, 0.15, 8, 8);
+                const rayMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.3 + Math.random() * 0.3
+                });
+                const ray = new THREE.Mesh(rayGeometry, rayMaterial);
+                ray.position.set(-6 + i * 1.5, 8, 0);
+                ray.rotation.z = Math.PI / 6 + (Math.random() - 0.5) * 0.3;
+                rayGroup.add(ray);
+            }
+            
+            return rayGroup;
+        }
+
+        let sunRays = createSunRays();
+        scene.add(sunRays);
+
+        function calculatePhotosynthesisRate() {
+            const lightFactor = lightIntensity / 100;
+            const co2Factor = Math.min(co2Concentration / 400, 2);
+            const tempFactor = Math.max(0, 1 - Math.abs(temperature - 30) / 25);
+            
+            return lightFactor * co2Factor * tempFactor * 20;
+        }
+
+        function updatePhase() {
+            const rate = calculatePhotosynthesisRate();
+            
+            if (rate > 0) {
+                if (currentPhase === 1 && molecules.atp >= 18) {
+                    currentPhase = 2;
+                } else if (currentPhase === 2 && molecules.glucose >= 1) {
+                    currentPhase = 3;
+                }
+            }
+            
+            document.querySelectorAll('.phase-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index < currentPhase);
+            });
+            
+            const phaseTexts = [
+                '光反应：水光解',
+                '暗反应：碳固定',
+                '完成：葡萄糖合成'
+            ];
+            document.getElementById('phaseText').textContent = phaseTexts[currentPhase - 1];
+        }
+
+        function updateParticles() {
+            const time = Date.now() * 0.001 * speed;
+            
+            particleSystems.forEach(ps => {
+                if (!ps.system.visible) return;
+                
+                const positions = ps.system.geometry.attributes.position.array;
+                const count = positions.length / 3;
+                
+                for (let i = 0; i < count; i++) {
+                    if (ps.type === 'water' || ps.type === 'co2') {
+                        positions[i * 3] += 0.02 * speed;
+                        if (positions[i * 3] > -2) {
+                            positions[i * 3] = ps.baseX + (Math.random() - 0.5) * 2;
+                        }
+                    } else if (ps.type === 'o2' || ps.type === 'glucose') {
+                        positions[i * 3] += 0.02 * speed;
+                        if (positions[i * 3] > 12) {
+                            positions[i * 3] = 4 + (Math.random() - 0.5) * 2;
+                        }
+                    }
+                    
+                    positions[i * 3 + 1] += Math.sin(time + i) * 0.01;
+                }
+                
+                ps.system.geometry.attributes.position.needsUpdate = true;
+            });
+        }
+
+        function simulatePhotosynthesis() {
+            const rate = calculatePhotosynthesisRate();
+            if (rate <= 0) return;
+            
+            const consumptionRate = rate * 0.001 * speed;
+            
+            if (currentPhase === 1 && molecules.water > 0) {
+                molecules.water = Math.max(0, molecules.water - consumptionRate);
+                molecules.o2 = Math.min(12, molecules.o2 + consumptionRate * 0.5);
+                molecules.atp = Math.min(36, molecules.atp + consumptionRate * 2);
+                molecules.nadph = Math.min(24, molecules.nadph + consumptionRate);
+                
+                particleSystems.find(ps => ps.type === 'o2').system.visible = molecules.o2 > 0;
+            }
+            
+            if (currentPhase >= 2 && molecules.co2 > 0 && molecules.atp >= 18) {
+                molecules.co2 = Math.max(0, molecules.co2 - consumptionRate);
+                molecules.atp = Math.max(0, molecules.atp - consumptionRate * 3);
+                molecules.nadph = Math.max(0, molecules.nadph - consumptionRate * 2);
+                molecules.glucose = Math.min(6, molecules.glucose + consumptionRate * 0.1);
+                
+                particleSystems.find(ps => ps.type === 'glucose').system.visible = molecules.glucose > 0;
+                particleSystems.find(ps => ps.type === 'atp').system.visible = molecules.atp > 0;
+            }
+            
+            updatePhase();
+        }
+
+        function updateUI() {
+            document.getElementById('lightIntensityValue').textContent = `${lightIntensity}%`;
+            document.getElementById('co2Value').textContent = `${co2Concentration} ppm`;
+            document.getElementById('tempValue').textContent = `${temperature}°C`;
+            
+            document.getElementById('waterCount').textContent = molecules.water.toFixed(1);
+            document.getElementById('co2Count').textContent = molecules.co2.toFixed(1);
+            document.getElementById('o2Count').textContent = molecules.o2.toFixed(1);
+            document.getElementById('glucoseCount').textContent = molecules.glucose.toFixed(2);
+            document.getElementById('atpCount').textContent = molecules.atp.toFixed(1);
+            document.getElementById('nadphCount').textContent = molecules.nadph.toFixed(1);
+            
+            const rate = calculatePhotosynthesisRate();
+            document.getElementById('rateValue').textContent = `${rate.toFixed(2)} μmol/m²/s`;
+            document.getElementById('rateBar').style.width = `${(rate / 20) * 100}%`;
+            
+            sunLight.intensity = 0.5 + (lightIntensity / 100) * 1.5;
+            sunRays.visible = lightIntensity > 10;
+            sunRays.children.forEach((ray, i) => {
+                ray.material.opacity = (lightIntensity / 100) * (0.3 + Math.random() * 0.3);
+            });
+        }
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            chloroplastGroup.rotation.y += 0.002 * speed;
+            sunRays.rotation.z += 0.001 * speed;
+            
+            if (isPlaying) {
+                simulatePhotosynthesis();
+                updateParticles();
+                updateUI();
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        document.getElementById('lightIntensitySlider').addEventListener('input', (e) => {
+            lightIntensity = parseInt(e.target.value);
+            updateUI();
+        });
+
+        document.getElementById('co2Slider').addEventListener('input', (e) => {
+            co2Concentration = parseInt(e.target.value);
+            updateUI();
+        });
+
+        document.getElementById('tempSlider').addEventListener('input', (e) => {
+            temperature = parseInt(e.target.value);
+            updateUI();
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = `${speed.toFixed(1)}x`;
+        });
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            
+            if (isPlaying) {
+                playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+                playText.textContent = '暂停';
+            } else {
+                playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+                playText.textContent = '开始';
+            }
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            simulatePhotosynthesis();
+            updateUI();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            isPlaying = false;
+            currentPhase = 1;
+            molecules = { water: 6, co2: 6, o2: 0, glucose: 0, atp: 0, nadph: 0 };
+            lightIntensity = 100;
+            co2Concentration = 400;
+            temperature = 25;
+            speed = 1.0;
+            
+            document.getElementById('lightIntensitySlider').value = 100;
+            document.getElementById('co2Slider').value = 400;
+            document.getElementById('tempSlider').value = 25;
+            document.getElementById('speedSlider').value = 1;
+            
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            playText.textContent = '开始';
+            
+            createChloroplast();
+            updateUI();
+        });
+
+        document.getElementById('randomBtn').addEventListener('click', () => {
+            lightIntensity = Math.round(20 + Math.random() * 80);
+            co2Concentration = Math.round(200 + Math.random() * 600);
+            temperature = Math.round(10 + Math.random() * 30);
+            
+            document.getElementById('lightIntensitySlider').value = lightIntensity;
+            document.getElementById('co2Slider').value = co2Concentration;
+            document.getElementById('tempSlider').value = temperature;
+            
+            updateUI();
+        });
+
+        document.getElementById('toggleSidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / (window.innerHeight - 64);
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight - 64);
+        });
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            
+            camera.position.x -= deltaX * 0.02;
+            camera.position.y += deltaY * 0.02;
+            camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        container.addEventListener('mouseup', () => isDragging = false);
+        container.addEventListener('mouseleave', () => isDragging = false);
+
+        container.addEventListener('wheel', (e) => {
+            camera.position.z += e.deltaY * 0.02;
+            camera.position.z = Math.max(10, Math.min(35, camera.position.z));
+        });
+
+        container.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            if (!isDragging || e.touches.length !== 1) return;
+            
+            const deltaX = e.touches[0].clientX - previousMousePosition.x;
+            const deltaY = e.touches[0].clientY - previousMousePosition.y;
+            
+            camera.position.x -= deltaX * 0.02;
+            camera.position.y += deltaY * 0.02;
+            camera.lookAt(0, 0, 0);
+            
+            previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        });
+
+        container.addEventListener('touchend', () => isDragging = false);
+
+        function initFormulas() {
+            katex.render("6CO_2 + 6H_2O \\xrightarrow{光能} C_6H_{12}O_6 + 6O_2", document.getElementById('formula1'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            katex.render("2H_2O \\xrightarrow{光} O_2 + 4H^+ + 4e^-", document.getElementById('formula2'), {
+                displayMode: true,
+                throwOnError: false
+            });
+            katex.render("3CO_2 + 6NADPH + 9ATP \\rightarrow G3P + 6NADP^+ + 9ADP", document.getElementById('formula3'), {
+                displayMode: true,
+                throwOnError: false
+            });
+        }
+
+        createChloroplast();
+        updateUI();
+        initFormulas();
+        animate();
+    </script>
+</body>
+</html>
