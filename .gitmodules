@@ -1,0 +1,3 @@
+[submodule "solutions/quick-cbam"]
+	path = solutions/quick-cbam
+	url = https://github.com/qdriven/quick-cbam.git
