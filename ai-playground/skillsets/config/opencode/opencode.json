@@ -1,0 +1,8 @@
+{
+  "provider": "opencode",
+  "base_url": "https://api.opencode.ai/v1",
+  "api_key_env": "OPENCODE_API_KEY",
+  "model": "opencode-chat",
+  "temperature": 0.2,
+  "max_tokens": 4096
+}

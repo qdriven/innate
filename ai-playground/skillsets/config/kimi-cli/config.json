@@ -1,0 +1,8 @@
+{
+  "provider": "kimi",
+  "model": "moonshot-v1-128k",
+  "base_url": "https://api.moonshot.cn/v1",
+  "api_key_env": "KIMI_API_KEY",
+  "temperature": 0.2,
+  "max_tokens": 4096
+}
