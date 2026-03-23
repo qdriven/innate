@@ -1,0 +1,50 @@
+name: Collect GitHub Starred Repos
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build backend
+        run: |
+          cd backend
+          go mod download
+          go build -o github-collector .
+
+      - name: Run collection
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd backend
+          ./github-collector serve --http=0.0.0.0:8090 &
+          sleep 5
+          
+          # Collect starred repos for configured users
+          curl -X POST http://localhost:8090/api/github/collect/qdriven
+          
+          # Export to JSON
+          curl "http://localhost:8090/api/starred/search?github_user=qdriven&perPage=10000" > data/starred_repos.json
+          
+          # Kill the server
+          pkill -f github-collector
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/starred_repos.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update starred repositories data [skip ci]"
+          git push
