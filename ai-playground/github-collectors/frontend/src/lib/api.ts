@@ -79,4 +79,71 @@ export const api = {
     const response = await axios.get(`${API_URL}/api/starred/tags/${username}`)
     return response.data
   },
+
+  async collectTrendingRepos(period: string = 'daily'): Promise<{ period: string; fetched: number; saved: number; snapshot_date: string; message: string }> {
+    const response = await axios.post(`${API_URL}/api/github/trending/collect?period=${period}`)
+    return response.data
+  },
+
+  async searchTrendingRepos(params: TrendingSearchParams): Promise<TrendingSearchResult> {
+    const queryParams = new URLSearchParams()
+    if (params.period) queryParams.append('period', params.period)
+    if (params.snapshot_date) queryParams.append('snapshot_date', params.snapshot_date)
+    if (params.language) queryParams.append('language', params.language)
+    if (params.min_stars !== undefined) queryParams.append('min_stars', params.min_stars.toString())
+    if (params.max_stars !== undefined) queryParams.append('max_stars', params.max_stars.toString())
+    if (params.page) queryParams.append('page', params.page.toString())
+    if (params.perPage) queryParams.append('perPage', params.perPage.toString())
+
+    const response = await axios.get(`${API_URL}/api/trending/search?${queryParams.toString()}`)
+    return response.data
+  },
+
+  async getTrendingDates(period: string = 'daily'): Promise<{ period: string; dates: string[] }> {
+    const response = await axios.get(`${API_URL}/api/trending/dates?period=${period}`)
+    return response.data
+  },
+
+  async getTrendingLanguages(period?: string, snapshotDate?: string): Promise<{ languages: Record<string, number> }> {
+    const queryParams = new URLSearchParams()
+    if (period) queryParams.append('period', period)
+    if (snapshotDate) queryParams.append('snapshot_date', snapshotDate)
+    
+    const response = await axios.get(`${API_URL}/api/trending/languages?${queryParams.toString()}`)
+    return response.data
+  },
+}
+
+export interface TrendingRepo {
+  id: string
+  repo_id: number
+  repo_name: string
+  full_name: string
+  description: string
+  html_url: string
+  star_num: number
+  language: string
+  fork_num: number
+  tags: string
+  trending_period: string
+  snapshot_date: string
+  stars_today: number
+  rank: number
+  collected_at: string
+}
+
+export interface TrendingSearchParams {
+  period?: string
+  snapshot_date?: string
+  language?: string
+  min_stars?: number
+  max_stars?: number
+  page?: number
+  perPage?: number
+}
+
+export interface TrendingSearchResult {
+  page: number
+  perPage: number
+  items: TrendingRepo[]
 }

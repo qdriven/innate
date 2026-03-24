@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Star, GitFork, ExternalLink, Search, RefreshCw } from 'lucide-react'
+import { Star, GitFork, ExternalLink, Search, RefreshCw, TrendingUp } from 'lucide-react'
 import { api, StarredRepo, LanguagesResponse, TagsResponse } from '@/lib/api'
 
 export default function Home() {
@@ -90,9 +91,17 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">GitHub Starred Repositories</h1>
-          <p className="text-muted-foreground">View and filter starred repositories for any GitHub user</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">GitHub Starred Repositories</h1>
+            <p className="text-muted-foreground">View and filter starred repositories for any GitHub user</p>
+          </div>
+          <Link href="/trending">
+            <Button variant="outline" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              View Trending
+            </Button>
+          </Link>
         </div>
 
         <div className="bg-card rounded-lg border p-6 mb-6">
